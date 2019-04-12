@@ -98,7 +98,7 @@ export function indicatorDistribution(
   size: number,
   indicator: number
 ): Distribution {
-  if (!isFinite(size) || size !== Math.floor(size) || size < 0) {
+  if (!isFinite(size) || size !== Math.floor(size) || size <= 0) {
     throw new Error("size: expected positive integer, but got: " + size);
   }
   if (

@@ -106,6 +106,17 @@ describe("core/attribution/markovChain", () => {
     });
   });
 
+  describe("indicatorDistribution", () => {
+    it("computes the indicator distribution with domain of size 1", () => {
+      const pi = indicatorDistribution(1, 0);
+      expect(pi).toEqual(new Float64Array([1]));
+    });
+    it("computes the indicator distribution with domain of size 4 and source node 0", () => {
+      const pi = indicatorDistribution(4, 0);
+      expect(pi).toEqual(new Float64Array([1, 0, 0, 0]));
+    });
+  });
+
   describe("sparseMarkovChainAction", () => {
     it("acts properly on a nontrivial chain", () => {
       // Note: this test case uses only real numbers that are exactly
@@ -257,6 +268,52 @@ describe("core/attribution/markovChain", () => {
       expectAllClose(result.pi, expected);
     });
 
+    it("finds a the same stationary distribution regardless of initialDistribution", async () => {
+      // Node 0 is the "center"; nodes 1 through 4 are "satellites". A
+      // satellite transitions to the center with probability 0.5, or to a
+      // cyclically adjacent satellite with probability 0.25 each. The
+      // center transitions to a uniformly random satellite.
+      const chain = sparseMarkovChainFromTransitionMatrix([
+        [0, 0.25, 0.25, 0.25, 0.25],
+        [0.5, 0, 0.25, 0, 0.25],
+        [0.5, 0.25, 0, 0.25, 0],
+        [0.5, 0, 0.25, 0, 0.25],
+        [0.5, 0.25, 0, 0.25, 0],
+      ]);
+      const alpha = 0.1;
+      const seed = uniformDistribution(chain.length);
+      const initialDistribution1 = indicatorDistribution(chain.length, 0);
+      const initialDistribution2 = indicatorDistribution(chain.length, 1);
+
+      const result1 = await findStationaryDistribution(
+        chain,
+        seed,
+        alpha,
+        initialDistribution1,
+        {
+          maxIterations: 255,
+          convergenceThreshold: 1e-7,
+          verbose: false,
+          yieldAfterMs: 1,
+        }
+      );
+
+      const result2 = await findStationaryDistribution(
+        chain,
+        seed,
+        alpha,
+        initialDistribution2,
+        {
+          maxIterations: 255,
+          convergenceThreshold: 1e-7,
+          verbose: false,
+          yieldAfterMs: 1,
+        }
+      );
+
+      expectAllClose(result1.pi, result2.pi);
+    });
+
     it("finds a non-degenerate stationary distribution with seed and non-zero alpha", async () => {
       // Node 0 is the "center" and also the seed; nodes 1 through 4 are "satellites". A
       // satellite transitions to the center with probability 0.5, or to a
@@ -309,6 +366,62 @@ describe("core/attribution/markovChain", () => {
         0.15517241,
         0.15517241,
       ]);
+      expectAllClose(result.pi, expected);
+    });
+
+    it("converges immediately when initialDistribution equals the stationary distribution", async () => {
+      // Node 0 is the "center" and also the seed; nodes 1 through 4 are "satellites". A
+      // satellite transitions to the center with probability 0.5, or to a
+      // cyclically adjacent satellite with probability 0.25 each. The
+      // center transitions to a uniformly random satellite.
+      const chain = sparseMarkovChainFromTransitionMatrix([
+        [0, 0.25, 0.25, 0.25, 0.25],
+        [0.5, 0, 0.25, 0, 0.25],
+        [0.5, 0.25, 0, 0.25, 0],
+        [0.5, 0, 0.25, 0, 0.25],
+        [0.5, 0.25, 0, 0.25, 0],
+      ]);
+
+      const alpha = 0.1;
+      const seed = indicatorDistribution(chain.length, 0);
+      // determine the expected stationary distribtution via Linear algebra
+      // from python3:
+      // >>A = np.matrix([[0, 0.25, 0.25, 0.25, 0.25],
+      //  [0.5, 0, 0.25, 0, 0.25],
+      //  [0.5, 0.25, 0, 0.25, 0],
+      //  [0.5, 0, 0.25, 0, 0.25],
+      //  [0.5, 0.25, 0, 0.25, 0]])
+      // >>seed = np.array([1, 0, 0, 0, 0])
+      // >>n = len(seed)
+      // >>alpha = .1
+      // >>piStar = alpha * seed * np.linalg.inv(np.eye(n) -(1-alpha)*A)
+      // >>print(piStar)
+      const expected = new Float64Array([
+        0.37931034,
+        0.15517241,
+        0.15517241,
+        0.15517241,
+        0.15517241,
+      ]);
+
+      const initialDistribution = expected;
+      const result = await findStationaryDistribution(
+        chain,
+        seed,
+        alpha,
+        initialDistribution,
+        {
+          maxIterations: 0,
+          convergenceThreshold: 1e-7,
+          verbose: false,
+          yieldAfterMs: 1,
+        }
+      );
+
+      expect(result.convergenceDelta).toBeLessThanOrEqual(1e-7);
+      validateConvegenceDelta(chain, seed, alpha, result);
+
+      expectStationary(chain, seed, alpha, result.pi);
       expectAllClose(result.pi, expected);
     });
 
