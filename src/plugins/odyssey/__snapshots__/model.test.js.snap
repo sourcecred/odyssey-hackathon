@@ -1,0 +1,122 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`plugins/odyssey/model graph snapshots as expected 1`] = `
+Array [
+  Object {
+    "type": "sourcecred/graph",
+    "version": "0.4.0",
+  },
+  Object {
+    "edges": Array [
+      Object {
+        "address": Array [
+          "sourcecred",
+          "odyssey",
+          "hackathon",
+          "odyssey/model.js",
+        ],
+        "dstIndex": 0,
+        "srcIndex": 4,
+      },
+      Object {
+        "address": Array [
+          "sourcecred",
+          "odyssey",
+          "hackathon",
+          "testing",
+        ],
+        "dstIndex": 5,
+        "srcIndex": 4,
+      },
+      Object {
+        "address": Array [
+          "sourcecred",
+          "odyssey",
+          "me",
+          "my partner",
+        ],
+        "dstIndex": 3,
+        "srcIndex": 2,
+      },
+      Object {
+        "address": Array [
+          "sourcecred",
+          "odyssey",
+          "odyssey/model.js",
+          "me",
+        ],
+        "dstIndex": 2,
+        "srcIndex": 0,
+      },
+      Object {
+        "address": Array [
+          "sourcecred",
+          "odyssey",
+          "odyssey/model.test.js",
+          "me",
+        ],
+        "dstIndex": 2,
+        "srcIndex": 1,
+      },
+      Object {
+        "address": Array [
+          "sourcecred",
+          "odyssey",
+          "odyssey/model.test.js",
+          "odyssey/model.js",
+        ],
+        "dstIndex": 0,
+        "srcIndex": 1,
+      },
+      Object {
+        "address": Array [
+          "sourcecred",
+          "odyssey",
+          "testing",
+          "odyssey/model.test.js",
+        ],
+        "dstIndex": 1,
+        "srcIndex": 5,
+      },
+    ],
+    "nodes": Array [
+      Array [
+        "sourcecred",
+        "odyssey",
+        "CONTRIBUTION",
+        "odyssey/model.js",
+      ],
+      Array [
+        "sourcecred",
+        "odyssey",
+        "CONTRIBUTION",
+        "odyssey/model.test.js",
+      ],
+      Array [
+        "sourcecred",
+        "odyssey",
+        "PERSON",
+        "me",
+      ],
+      Array [
+        "sourcecred",
+        "odyssey",
+        "PERSON",
+        "my partner",
+      ],
+      Array [
+        "sourcecred",
+        "odyssey",
+        "PRIORITY",
+        "hackathon",
+      ],
+      Array [
+        "sourcecred",
+        "odyssey",
+        "PRIORITY",
+        "testing",
+      ],
+    ],
+  },
+]
+`;
