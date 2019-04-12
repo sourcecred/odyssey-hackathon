@@ -52,6 +52,31 @@ export type ScoredNeighbor = {|
   +scoreContribution: number,
 |};
 
+// Allows specifying what kind of 'seed vector' is used in PageRank.
+// For all the choices that actually use seeding, alpha determines how much
+// we mix with the seed vector at each step.
+export type PagerankSeedOptions =
+  | NoSeed
+  | UniformSeed
+  | SelectedUniformSeed
+  | SpecifiedSeed;
+// Alpha is set to 0, which implies that no seeding occurs.
+export type NoSeed = {|+type: "NO_SEED"|};
+// All nodes are uniformly used as the seed.
+export type UniformSeed = {|+type: "UNIFORM", +alpha: number|};
+// Uniform distribution over the nodes that are selected.
+export type SelectedUniformSeed = {|
+  +type: "SELECTED",
+  +selectedNodes: $ReadOnlyArray<NodeAddressT>,
+  +alpha: number,
+|};
+// Uses the specified distribution. It will be re-normalized to 1.
+export type SpecifiedSeed = {|
+  +type: "SPECIFIED",
+  +scoreMap: Map<NodeAddressT, number>,
+  +alpha: number,
+|};
+
 export opaque type PagerankGraphJSON = Compatible<{|
   +graphJSON: GraphJSON,
   // Score for every node, ordered by the sorted node address.
@@ -391,6 +416,30 @@ export class PagerankGraph {
     );
   }
 
+  _createSeedDistribution(
+    osmc: OrderedSparseMarkovChain,
+    options: PagerankSeedOptions
+  ): Distribution {
+    const type = options.type;
+    switch (type) {
+      case "NO_SEED":
+        return uniformDistribution(osmc.chain.length);
+      case "UNIFORM":
+        return uniformDistribution(osmc.chain.length);
+      case "SELECTED":
+        throw new Error("selected seed not yet implemented.");
+      case "SPECIFIED":
+        throw new Error("selected seed not yet implemented.");
+      default:
+        throw new Error(`Unexpected seed type: ${(type: empty)}`);
+    }
+  }
+
+  _generateMarkovChainForPagerankGraph(
+    seed: PagerankSeedOptions,
+    options: PagerankConvergenceOptions
+  ) {}
+
   /**
    * Asynchronously run PageRank to re-compute scores.
    *
@@ -413,6 +462,7 @@ export class PagerankGraph {
    * scratch every time `runPagerank` is called.
    */
   async runPagerank(
+    seed: PagerankSeedOptions,
     options: PagerankConvergenceOptions
   ): Promise<PagerankConvergenceReport> {
     this._verifyGraphNotModified();
@@ -424,9 +474,9 @@ export class PagerankGraph {
       this._syntheticLoopWeight
     );
     const osmc = createOrderedSparseMarkovChain(connections);
-    const alpha = 0;
-    const seed = uniformDistribution(osmc.chain.length);
     const pi0 = uniformDistribution(osmc.chain.length);
+    const alpha = seed.type === "NO_SEED" ? 0 : seed.alpha;
+    const seed = this._createSeedDistribution(osmc, seed);
     const distributionResult = await findStationaryDistribution(
       {
         chain: osmc.chain,
