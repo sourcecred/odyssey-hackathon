@@ -222,10 +222,7 @@ function* findStationaryDistributionGenerator(
 }
 
 export function findStationaryDistribution(
-  chain: SparseMarkovChain,
-  seed: Distribution,
-  alpha: number,
-  pi0: Distribution,
+  pagerankParams: PagerankParams,
   options: {|
     +verbose: boolean,
     +convergenceThreshold: number,
@@ -233,6 +230,7 @@ export function findStationaryDistribution(
     +yieldAfterMs: number,
   |}
 ): Promise<StationaryDistributionResult> {
+  const {chain, seed, alpha, pi0} = pagerankParams;
   let gen = findStationaryDistributionGenerator(
     {
       chain,
