@@ -237,7 +237,9 @@ describe("cli/pagerank", () => {
         weightsToEdgeEvaluator(weightedTypes),
         DEFAULT_SYNTHETIC_LOOP_WEIGHT
       );
-      await expectedPagerankGraph.runPagerank({
+      const seed = {type: "NO_SEED"};
+
+      await expectedPagerankGraph.runPagerank(seed, {
         convergenceThreshold: DEFAULT_CONVERGENCE_THRESHOLD,
         maxIterations: DEFAULT_MAX_ITERATIONS,
       });

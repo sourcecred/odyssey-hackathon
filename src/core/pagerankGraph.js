@@ -20,13 +20,17 @@ import {
   createConnections,
   createOrderedSparseMarkovChain,
   type EdgeWeight,
+  type OrderedSparseMarkovChain,
 } from "./attribution/graphToMarkovChain";
 import {
   findStationaryDistribution,
   uniformDistribution,
-} from "../core/attribution/markovChain";
+  type Distribution,
+  type PagerankParams,
+} from "./attribution/markovChain";
 import * as NullUtil from "../util/null";
 
+export type {PagerankParams} from "./attribution/markovChain";
 export {Direction} from "./graph";
 export type {DirectionT, NeighborsOptions} from "./graph";
 export type {EdgeWeight} from "./attribution/graphToMarkovChain";
@@ -50,6 +54,31 @@ export type ScoredNeighbor = {|
   // How much score (in absolute terms) was provided to the target by
   // the neighbor node through this weightedEdge
   +scoreContribution: number,
+|};
+
+// Allows specifying what kind of 'seed vector' is used in PageRank.
+// For all the choices that actually use seeding, alpha determines how much
+// we mix with the seed vector at each step.
+export type PagerankSeedOptions =
+  | NoSeed
+  | UniformSeed
+  | SelectedUniformSeed
+  | SpecifiedSeed;
+// Alpha is set to 0, which implies that no seeding occurs.
+export type NoSeed = {|+type: "NO_SEED"|};
+// All nodes are uniformly used as the seed.
+export type UniformSeed = {|+type: "UNIFORM_SEED", +alpha: number|};
+// Uniform distribution over the nodes that are selected.
+export type SelectedUniformSeed = {|
+  +type: "SELECTED_SEED",
+  +selectedNodes: $ReadOnlyArray<NodeAddressT>,
+  +alpha: number,
+|};
+// Uses the specified distribution. It will be re-normalized to 1.
+export type SpecifiedSeed = {|
+  +type: "SPECIFIED_SEED",
+  +scoreMap: Map<NodeAddressT, number>,
+  +alpha: number,
 |};
 
 export opaque type PagerankGraphJSON = Compatible<{|
@@ -391,6 +420,52 @@ export class PagerankGraph {
     );
   }
 
+  _generatePagerankParams(
+    osmc: OrderedSparseMarkovChain,
+    seed: PagerankSeedOptions,
+    pi0: Distribution
+  ): PagerankParams {
+    function alphaForSeed() {
+      return seed.type === "NO_SEED" ? 0 : seed.alpha;
+    }
+    function distributionForSeed() {
+      const type = seed.type;
+      switch (type) {
+        case "NO_SEED":
+          return uniformDistribution(osmc.chain.length);
+        case "UNIFORM_SEED":
+          return uniformDistribution(osmc.chain.length);
+        case "SELECTED_SEED":
+          // TODO: Why is flow requiring this unnecessary hack?
+          const selectedNodes = ((seed: any): SelectedUniformSeed)
+            .selectedNodes;
+          const selectionSize = selectedNodes.length;
+          if (selectionSize === 0) {
+            return uniformDistribution(osmc.chain.length);
+          }
+          const selectedSet = new Set(selectedNodes);
+          const numNodes = osmc.nodeOrder.length;
+          const distribution = new Float64Array(numNodes);
+          for (let i = 0; i < numNodes; i++) {
+            if (selectedSet.has(osmc.nodeOrder[i])) {
+              distribution[i] = 1 / selectionSize;
+            }
+          }
+          return distribution;
+        case "SPECIFIED_SEED":
+          throw new Error("Not yet implemented.");
+        default:
+          throw new Error(`Unexpected seed type: ${(type: empty)}`);
+      }
+    }
+    return {
+      chain: osmc.chain,
+      seed: distributionForSeed(),
+      alpha: alphaForSeed(),
+      pi0,
+    };
+  }
+
   /**
    * Asynchronously run PageRank to re-compute scores.
    *
@@ -408,11 +483,13 @@ export class PagerankGraph {
    * individual delta in a node's score between the present and previous
    * iteration is less than or equal to `options.convergenceThreshold`.
    *
-   * TODO(#1020): Make `runPagerank` use the current nodes' scores as a
-   * starting point for computation, rather than re-generating from
-   * scratch every time `runPagerank` is called.
+   * Note that the pagerank attempts to restart from the current scores,
+   * which should result in higher performance in most cases (e.g. just re-running
+   * with a new seed). The final result should be the same, but may be slightly
+   * different due to numerical inaccuracies.
    */
   async runPagerank(
+    seed: PagerankSeedOptions,
     options: PagerankConvergenceOptions
   ): Promise<PagerankConvergenceReport> {
     this._verifyGraphNotModified();
@@ -424,23 +501,32 @@ export class PagerankGraph {
       this._syntheticLoopWeight
     );
     const osmc = createOrderedSparseMarkovChain(connections);
-    const alpha = 0;
-    const seed = uniformDistribution(osmc.chain.length);
-    const pi0 = uniformDistribution(osmc.chain.length);
-    const distributionResult = await findStationaryDistribution(
-      {
-        chain: osmc.chain,
-        seed,
-        alpha,
-        pi0,
-      },
-      {
-        verbose: false,
-        convergenceThreshold: options.convergenceThreshold,
-        maxIterations: options.maxIterations,
-        yieldAfterMs: 30,
-      }
-    );
+
+    const pi0 = new Float64Array(osmc.nodeOrder.length);
+    for (let i = 0; i < osmc.nodeOrder.length; i++) {
+      // This implementation is really inefficient because it does a whole bevy of unnecessary
+      // lookups. We should really just cache the distribution on the PagerankGraph or something.
+      // Also, I would like to do more intelligent distribution caching where we privilege the "NO_SEED"
+      // distribution as the starting point, or maybe just expose it to the end user and let them
+      // implement their own caching. This will suffice for hackathon purposes, though.
+      pi0[i] = NullUtil.get(this._scores.get(osmc.nodeOrder[i]));
+    }
+
+    const pagerankParams = this._generatePagerankParams(osmc, seed, pi0);
+    return this._runPagerankFromParams(pagerankParams, osmc, options);
+  }
+
+  async _runPagerankFromParams(
+    params: PagerankParams,
+    osmc: OrderedSparseMarkovChain,
+    options: PagerankConvergenceOptions
+  ): Promise<PagerankConvergenceReport> {
+    const distributionResult = await findStationaryDistribution(params, {
+      verbose: false,
+      convergenceThreshold: options.convergenceThreshold,
+      maxIterations: options.maxIterations,
+      yieldAfterMs: 30,
+    });
     this._scores = distributionToNodeDistribution(
       osmc.nodeOrder,
       distributionResult.pi
