@@ -130,7 +130,7 @@ describe("core/attribution/markovChain", () => {
       const alpha = 0;
       const seed = uniformDistribution(chain.length);
       const pi0 = new Float64Array([0.125, 0.375, 0.625]);
-      const pi1 = sparseMarkovChainAction(chain, seed, alpha, pi0);
+      const pi1 = sparseMarkovChainAction({chain, seed, alpha, pi0});
       // The expected value is given by `pi0 * A`, where `A` is the
       // transition matrix. In Octave:
       // >> A = [ 1 0 0; 0.25 0 0.75 ; 0.25 0.75 0 ];
@@ -154,7 +154,7 @@ describe("core/attribution/markovChain", () => {
       const alpha = 0.5;
       const seed = indicatorDistribution(chain.length, 0);
       const pi0 = new Float64Array([0.6, 0.2, 0.2]);
-      const pi1 = sparseMarkovChainAction(chain, seed, alpha, pi0);
+      const pi1 = sparseMarkovChainAction({chain, seed, alpha, pi0});
       // The expected value is given by `(1-alpha)*pi0 * A + alpha*seed`,
       // where `A` is the transition matrix. In python3:
       // >> A = np.matrix([[ 1, 0, 0], [0.25, 0, 0.75], [0.25, 0.75, 0 ]])
@@ -187,9 +187,9 @@ describe("core/attribution/markovChain", () => {
     chain: SparseMarkovChain,
     seed: Distribution,
     alpha: number,
-    pi: Distribution
+    pi0: Distribution
   ): void {
-    expectAllClose(sparseMarkovChainAction(chain, seed, alpha, pi), pi);
+    expectAllClose(sparseMarkovChainAction({chain, seed, alpha, pi0}), pi0);
   }
 
   describe("findStationaryDistribution", () => {
@@ -199,7 +199,7 @@ describe("core/attribution/markovChain", () => {
       alpha: number,
       d: StationaryDistributionResult
     ) {
-      const nextPi = sparseMarkovChainAction(chain, seed, alpha, d.pi);
+      const nextPi = sparseMarkovChainAction({chain, seed, alpha, pi0: d.pi});
       expect(d.convergenceDelta).toEqual(computeDelta(d.pi, nextPi));
     }
 
