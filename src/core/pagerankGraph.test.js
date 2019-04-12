@@ -9,9 +9,16 @@ import {
   type Edge,
   type EdgesOptions,
 } from "./graph";
-import {PagerankGraph, Direction} from "./pagerankGraph";
+import {
+  PagerankGraph,
+  Direction,
+  type PagerankSeedOptions,
+  type PagerankParams,
+} from "./pagerankGraph";
 import {advancedGraph} from "./graphTestUtil";
 import * as NullUtil from "../util/null";
+import type {OrderedSparseMarkovChain} from "./attribution/graphToMarkovChain";
+import {uniformDistribution} from "./attribution/markovChain";
 
 describe("core/pagerankGraph", () => {
   const defaultEvaluator = (_unused_edge) => ({toWeight: 1, froWeight: 0});
@@ -24,9 +31,15 @@ describe("core/pagerankGraph", () => {
     const g = advancedGraph().graph1();
     return new PagerankGraph(g, edgeEvaluator);
   }
-  async function convergedPagerankGraph(): Promise<PagerankGraph> {
+  const defaultSeed = () => ({type: "NO_SEED"});
+  async function convergedPagerankGraph(
+    seed: PagerankSeedOptions = defaultSeed()
+  ): Promise<PagerankGraph> {
     const pg = examplePagerankGraph();
-    await pg.runPagerank({maxIterations: 100, convergenceThreshold: 1e-4});
+    await pg.runPagerank(seed, {
+      maxIterations: 100,
+      convergenceThreshold: 1e-4,
+    });
     return pg;
   }
 
@@ -486,11 +499,136 @@ describe("core/pagerankGraph", () => {
       expect(total).toBeCloseTo(1);
     }
 
+    // Verify that PagerankParams are generated properly based on the seed information.
+    describe("seed paramter generation", () => {
+      async function paramsForSeed(
+        seed: PagerankSeedOptions
+      ): Promise<{params: PagerankParams, osmc: OrderedSparseMarkovChain}> {
+        const eg = examplePagerankGraph();
+        let params: PagerankParams | null = null;
+        let osmc: OrderedSparseMarkovChain | null = null;
+        // Find a less hacky way to test this codepath (without complicating the API)
+        (eg: any)._runPagerankFromParams = async function(params_, osmc_) {
+          params = params_;
+          osmc = osmc_;
+          return {convergenceDelta: 0};
+        };
+        await eg.runPagerank(seed, {maxIterations: 1, convergenceThreshold: 1});
+        return {params: NullUtil.get(params), osmc: NullUtil.get(osmc)};
+      }
+      const getAllNodes = () =>
+        Array.from(
+          examplePagerankGraph()
+            .graph()
+            .nodes()
+        );
+      const numNodes = getAllNodes().length;
+
+      it("doesn't support SPECIFIED_SEED", async () => {
+        const promise = paramsForSeed({
+          type: "SPECIFIED_SEED",
+          alpha: 0.5,
+          scoreMap: new Map(),
+        });
+        return expect(promise).rejects.toThrow("Not yet implemented");
+      });
+
+      describe("sets alpha to", () => {
+        it("0 for NO_SEED", async () => {
+          const {params} = await paramsForSeed({
+            type: "NO_SEED",
+          });
+          expect(params.alpha).toBe(0);
+        });
+        it("alpha for UNIFORM_SEED", async () => {
+          const {params} = await paramsForSeed({
+            type: "UNIFORM_SEED",
+            alpha: 0.5,
+          });
+          expect(params.alpha).toBe(0.5);
+        });
+        it("alpha for SELECTED_SEED", async () => {
+          const {params} = await paramsForSeed({
+            type: "SELECTED_SEED",
+            selectedNodes: [],
+            alpha: 0.5,
+          });
+          expect(params.alpha).toBe(0.5);
+        });
+      });
+
+      describe("sets seed to", () => {
+        it("uniform for NO_SEED", async () => {
+          const {params} = await paramsForSeed({type: "NO_SEED"});
+          expect(params.seed).toEqual(uniformDistribution(numNodes));
+        });
+        it("uniform for UNIFORM_SEED", async () => {
+          const {params} = await paramsForSeed({
+            type: "UNIFORM_SEED",
+            alpha: 0.5,
+          });
+          expect(params.seed).toEqual(uniformDistribution(numNodes));
+        });
+        it("uniform for SELECTED_SEED with 0 selectedNodes", async () => {
+          const {params} = await paramsForSeed({
+            type: "SELECTED_SEED",
+            selectedNodes: [],
+            alpha: 0.5,
+          });
+          expect(params.seed).toEqual(uniformDistribution(numNodes));
+        });
+        it("uniform for SELECTED_SEED with all nodes selected", async () => {
+          const {params} = await paramsForSeed({
+            type: "SELECTED_SEED",
+            selectedNodes: getAllNodes(),
+            alpha: 0.5,
+          });
+          expect(params.seed).toEqual(uniformDistribution(numNodes));
+        });
+        it("indicator distribution when 1 selected node", async () => {
+          // Kind of a clever/hacky way to test what the seed was, leveraging that
+          // it will converge to the seed when alpha=1
+          const node = getAllNodes()[0];
+          const seed = {
+            type: "SELECTED_SEED",
+            alpha: 1,
+            selectedNodes: [node],
+          };
+          const eg = await convergedPagerankGraph(seed);
+          const score = NullUtil.get(eg.node(node)).score;
+          expect(score).toBe(1);
+        });
+        it("uniform over selected nodes when more selected nodes", async () => {
+          // Kind of a clever/hacky way to test what the seed was, leveraging that
+          // it will converge to the seed when alpha=1
+          const n0 = getAllNodes()[0];
+          const n1 = getAllNodes()[1];
+          const seed = {
+            type: "SELECTED_SEED",
+            alpha: 1,
+            selectedNodes: [n0, n1],
+          };
+          const eg = await convergedPagerankGraph(seed);
+          expect(NullUtil.get(eg.node(n0)).score).toBe(0.5);
+          expect(NullUtil.get(eg.node(n1)).score).toBe(0.5);
+        });
+      });
+
+      it("uniform seed and no alpha when NO_SEED", async () => {
+        const {params} = await paramsForSeed({type: "NO_SEED"});
+        expect(params.alpha).toBe(0);
+        expect(params.seed).toEqual(uniformDistribution(numNodes));
+      });
+    });
+
     it("promise rejects if the graph was modified", async () => {
       const pg = examplePagerankGraph();
       pg.graph().addNode(NodeAddress.empty);
       expect(
-        pg.runPagerank({maxIterations: 1, convergenceThreshold: 1})
+        pg.runPagerank(
+          {type: "NO_SEED"},
+          {maxIterations: 1, convergenceThreshold: 1}
+        )
       ).rejects.toThrow("underlying Graph has been modified");
       // It's possible that you could avoid the rejection if you
       // make the modification after calling runPagerank (but before
@@ -502,30 +640,39 @@ describe("core/pagerankGraph", () => {
     });
     it("respects maxIterations==0", async () => {
       const pg = examplePagerankGraph();
-      const results = await pg.runPagerank({
-        maxIterations: 0,
-        convergenceThreshold: 0,
-      });
+      const results = await pg.runPagerank(
+        {type: "NO_SEED"},
+        {
+          maxIterations: 0,
+          convergenceThreshold: 0,
+        }
+      );
       expect(results.convergenceDelta).toBeGreaterThan(0);
       checkUniformDistribution(pg);
     });
     it("will limit at max iterations when convergence threshld is low", async () => {
       const pg = examplePagerankGraph();
       const convergenceThreshold = 1e-18;
-      const results = await pg.runPagerank({
-        maxIterations: 17,
-        convergenceThreshold,
-      });
+      const results = await pg.runPagerank(
+        {type: "NO_SEED"},
+        {
+          maxIterations: 17,
+          convergenceThreshold,
+        }
+      );
       expect(results.convergenceDelta).toBeGreaterThan(convergenceThreshold);
       checkProbabilityDistribution(pg);
     });
     it("will converge when threshold is high", async () => {
       const pg = examplePagerankGraph();
       const convergenceThreshold = 0.01;
-      const results = await pg.runPagerank({
-        maxIterations: 170,
-        convergenceThreshold,
-      });
+      const results = await pg.runPagerank(
+        {type: "NO_SEED"},
+        {
+          maxIterations: 170,
+          convergenceThreshold,
+        }
+      );
       expect(results.convergenceDelta).toBeLessThan(convergenceThreshold);
       checkProbabilityDistribution(pg);
     });
@@ -555,7 +702,10 @@ describe("core/pagerankGraph", () => {
     it("unequal scores => unequal", async () => {
       const pg1 = examplePagerankGraph();
       const pg2 = examplePagerankGraph();
-      await pg1.runPagerank({maxIterations: 2, convergenceThreshold: 0.001});
+      await pg1.runPagerank(
+        {type: "NO_SEED"},
+        {maxIterations: 2, convergenceThreshold: 0.001}
+      );
       expect(pg1.equals(pg2)).toBe(false);
     });
     it("unequal edge weights => unequal", () => {

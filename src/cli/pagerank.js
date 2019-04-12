@@ -146,14 +146,20 @@ export function makePagerankCommand(
 export async function runPagerank(
   weights: WeightedTypes,
   graph: Graph
+  //seed: PagerankSeedOptions,
+  //initialDistribution: Distribution
 ): Promise<PagerankGraph> {
+  //included seed to bypass input
+  const seed = {type: "NO_SEED"};
+
   const evaluator = weightsToEdgeEvaluator(weights);
   const pagerankGraph = new PagerankGraph(
     graph,
     evaluator,
     DEFAULT_SYNTHETIC_LOOP_WEIGHT
   );
-  await pagerankGraph.runPagerank({
+
+  await pagerankGraph.runPagerank(seed, {
     maxIterations: DEFAULT_MAX_ITERATIONS,
     convergenceThreshold: DEFAULT_CONVERGENCE_THRESHOLD,
   });
@@ -187,7 +193,8 @@ export const defaultAdapters = () => [
 const defaultLoader = (r: RepoId) =>
   loadGraph(Common.sourcecredDirectory(), defaultAdapters(), r);
 export const defaultWeights = () => weightsForAdapters(defaultAdapters());
-export const defaultPagerank = (g: Graph) => runPagerank(defaultWeights(), g);
+//export const defaultSeed = () => {type: "NO_SEED"}
+export const defaultPagerank = (g: Graph) => runPagerank(defaultWeights(), g); //, defaultSeed());
 export const defaultSaver = (r: RepoId, pg: PagerankGraph) =>
   savePagerankGraph(Common.sourcecredDirectory(), r, pg);
 
