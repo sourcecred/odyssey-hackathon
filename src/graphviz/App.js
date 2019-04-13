@@ -9,6 +9,8 @@ import BrowserLocalStore from "../webutil/browserLocalStore";
 import Link from "../webutil/Link";
 import * as d3 from "d3";
 import {example} from "../plugins/odyssey/example";
+import {PagerankGraph} from "../core/pagerankGraph";
+import * as NullUtil from "../util/null";
 
 export class AppPage extends React.Component<{|
   +assets: Assets,
@@ -29,9 +31,9 @@ export class GraphViz extends React.Component<{}> {
   _rootNode: HTMLDivElement | null;
   simulation: any;
 
-  componentDidMount() {
-    const width = 1000;
-    const height = 1000;
+  async componentDidMount() {
+    const width = 1500;
+    const height = 800;
     const svg = d3
       .select(this._rootNode)
       .append("svg")
@@ -41,18 +43,66 @@ export class GraphViz extends React.Component<{}> {
       .append("g")
       .attr("transform", `translate(${width / 2}, ${height / 2})`);
 
+    const tooltip = d3
+      .select(this._rootNode)
+      .append("div")
+      .attr("class", "toolTip")
+      .style("display", "none")
+      .style("position", "absolute")
+      .style("min-width", "50px")
+      .style("height", "auto")
+      .style("background", "none repeat scroll 0 0 #ffffff");
+
     const nodesG = chart.append("g");
     const edgesG = chart.append("g");
+    const textG = chart.append("g");
 
     const instance = example();
     const graph = instance.graph();
-    const nodes = Array.from(instance.entities());
+    const prg = new PagerankGraph(graph, (_unused_edge) => ({
+      toWeight: 1,
+      froWeight: 0.1,
+    }));
+    await prg.runPagerank({maxIterations: 100, convergenceThreshold: 1e-3});
+
+    function mouseOver() {
+      var data = d3.select(this).data()[0];
+      var textDisplay = data.description;
+
+      tooltip
+        .style("left", d3.event.pageX - 10 + "px")
+        .style("top", d3.event.pageY - 30 + "px")
+        .style("display", "inline-block")
+        .html(function() {
+          return textDisplay;
+        });
+    }
+
+    function mouseOff() {
+      tooltip.style("display", "none");
+    }
+
+    const nodes = Array.from(instance.entities()).map((x) => ({
+      score: NullUtil.get(prg.node(x.address)).score,
+      ...x,
+    }));
+
+    let totalUserScore = 0;
+    for (const {score, type} of nodes) {
+      if (type === "PERSON") {
+        totalUserScore += score;
+      }
+    }
 
     const links = Array.from(graph.edges()).map((e) => ({
       source: e.src,
       target: e.dst,
       address: e.address,
     }));
+
+    function radius(d) {
+      return (d.score / totalUserScore) * 120;
+    }
 
     const ticked = () => {
       nodesG
@@ -62,6 +112,15 @@ export class GraphViz extends React.Component<{}> {
         })
         .attr("cy", function(d) {
           return d.y;
+        });
+
+      textG
+        .selectAll(".text")
+        .attr("x", function(d) {
+          return d.x + radius(d);
+        })
+        .attr("y", function(d) {
+          return d.y + radius(d);
         });
 
       //TODO: fix arrow marker by moving back based on the node radius
@@ -82,19 +141,23 @@ export class GraphViz extends React.Component<{}> {
     };
     this.simulation = d3
       .forceSimulation(nodes)
-      .force("charge", d3.forceManyBody(-30))
+      .force("charge", d3.forceManyBody().strength(-380))
       .force(
         "link",
         d3
           .forceLink()
           .id((d) => d.address)
           .links(links)
-          .distance(30)
+          .distance(120)
       )
-      .force("collide", d3.forceCollide().radius(5))
+      .force(
+        "collide",
+        d3.forceCollide().radius(function(d) {
+          return radius(d) * 2;
+        })
+      )
       .force("x", d3.forceX())
       .force("y", d3.forceY())
-      .alphaTarget(1)
       .on("tick", ticked);
 
     const nodeSelection = nodesG.selectAll(".node").data(nodes);
@@ -107,17 +170,74 @@ export class GraphViz extends React.Component<{}> {
     const newNodes = nodeSelection
       .enter()
       .append("circle")
-      .attr("class", "node");
+      .attr("class", "node")
+      .on("mouseover", mouseOver)
+      .on("mouseout", mouseOff);
+
     nodeSelection
       .merge(newNodes)
       .transition()
       .ease(d3.easeQuad)
       .duration(1000)
       .attr("fill", function(d) {
-        return "steelblue";
+        switch (d.type) {
+          case "PERSON":
+            return "blue";
+          case "PRIORITY":
+            return "gold";
+          case "CONTRIBUTION":
+            return "green";
+          default:
+            return "red";
+        }
       })
-      .attr("r", function(d) {
-        return 5;
+      .attr("r", radius);
+
+    const textSelection = textG.selectAll(".text").data(nodes);
+    textSelection
+      .exit()
+      .transition()
+      .ease(d3.easeQuad)
+      .duration(1000)
+      .remove();
+    const newTexts = textSelection
+      .enter()
+      .append("text")
+      .attr("class", "text");
+
+    textSelection
+      .merge(newTexts)
+      .transition()
+      .ease(d3.easeQuad)
+      .duration(1000)
+      .text(function(d) {
+        return d.name;
+      })
+      .attr("font-size", (d) => d.score * 300);
+
+    // edge data join
+    var edge = edgesG.selectAll(".edge").data(links);
+
+    // edge exit
+    edge.exit().remove();
+
+    // edge enter
+    var newEdge = edge
+      .enter()
+      .append("line")
+      .attr("class", "edge");
+
+    edge
+      .merge(newEdge)
+      .transition()
+      .ease(d3.easeQuad)
+      .duration(1000)
+      .attr("marker-end", "url(#arrow)")
+      .attr("stroke-width", function(d) {
+        return "1";
+      })
+      .attr("stroke", function(d) {
+        return "#666";
       });
   }
 
