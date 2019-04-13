@@ -159,4 +159,7 @@ const style = StyleSheet.create({
     width: 25,
     transform: "translateY(-1px)",
   },
+  body: {
+    backgroundColor: "#212121",
+  },
 });
