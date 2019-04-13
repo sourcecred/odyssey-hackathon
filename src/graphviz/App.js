@@ -12,6 +12,11 @@ import {example} from "../plugins/odyssey/example";
 import {PagerankGraph} from "../core/pagerankGraph";
 import * as NullUtil from "../util/null";
 
+const BACKGROUND_COLOR = "#313131";
+const INTERPOLATE_LOW = "#00ABE1";
+const INTERPOLATE_HIGH = "#90FF03";
+const EDGE_COLOR = "#111111";
+
 export class AppPage extends React.Component<{|
   +assets: Assets,
 |}> {
@@ -53,8 +58,8 @@ export class GraphViz extends React.Component<{}> {
       .style("height", "auto")
       .style("background", "none repeat scroll 0 0 #ffffff");
 
-    const nodesG = chart.append("g");
     const edgesG = chart.append("g");
+    const nodesG = chart.append("g");
     const textG = chart.append("g");
 
     const instance = example();
@@ -65,9 +70,14 @@ export class GraphViz extends React.Component<{}> {
     }));
     await prg.runPagerank({maxIterations: 100, convergenceThreshold: 1e-3});
 
+    function colorFor(d) {
+      const scoreRatio = d.score / maxScore;
+      return d3.interpolate(INTERPOLATE_LOW, INTERPOLATE_HIGH)(scoreRatio);
+    }
+
     function mouseOver() {
       var data = d3.select(this).data()[0];
-      var textDisplay = data.description;
+      var textDisplay = data.score;
 
       tooltip
         .style("left", d3.event.pageX - 10 + "px")
@@ -87,6 +97,17 @@ export class GraphViz extends React.Component<{}> {
       ...x,
     }));
 
+    let minScore = Infinity;
+    let maxScore = -Infinity;
+    for (const {score} of nodes) {
+      if (score < minScore) {
+        minScore = score;
+      }
+      if (score > maxScore) {
+        maxScore = score;
+      }
+    }
+
     let totalUserScore = 0;
     for (const {score, type} of nodes) {
       if (type === "PERSON") {
@@ -101,7 +122,7 @@ export class GraphViz extends React.Component<{}> {
     }));
 
     function radius(d) {
-      return (d.score / totalUserScore) * 120;
+      return Math.sqrt((d.score / maxScore) * 200);
     }
 
     const ticked = () => {
@@ -179,18 +200,7 @@ export class GraphViz extends React.Component<{}> {
       .transition()
       .ease(d3.easeQuad)
       .duration(1000)
-      .attr("fill", function(d) {
-        switch (d.type) {
-          case "PERSON":
-            return "blue";
-          case "PRIORITY":
-            return "gold";
-          case "CONTRIBUTION":
-            return "green";
-          default:
-            return "red";
-        }
-      })
+      .attr("fill", colorFor)
       .attr("r", radius);
 
     const textSelection = textG.selectAll(".text").data(nodes);
@@ -211,9 +221,10 @@ export class GraphViz extends React.Component<{}> {
       .ease(d3.easeQuad)
       .duration(1000)
       .text(function(d) {
-        return d.name;
+        return Math.floor(d.score * 1000);
       })
-      .attr("font-size", (d) => d.score * 300);
+      .attr("fill", colorFor);
+    //.attr("font-size", (d) => d.score * 300);
 
     // edge data join
     var edge = edgesG.selectAll(".edge").data(links);
@@ -234,10 +245,11 @@ export class GraphViz extends React.Component<{}> {
       .duration(1000)
       .attr("marker-end", "url(#arrow)")
       .attr("stroke-width", function(d) {
-        return "1";
+        return "1px";
       })
+      .attr("opacity", "0.4")
       .attr("stroke", function(d) {
-        return "#666";
+        return EDGE_COLOR;
       });
   }
 
@@ -254,6 +266,12 @@ export class GraphViz extends React.Component<{}> {
   }
 
   render() {
-    return <div className="graph-container" ref={this._setRef.bind(this)} />;
+    return (
+      <div
+        style={{backgroundColor: BACKGROUND_COLOR}}
+        className="graph-container"
+        ref={this._setRef.bind(this)}
+      />
+    );
   }
 }
