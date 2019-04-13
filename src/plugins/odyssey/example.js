@@ -17,7 +17,6 @@ export function example(): OdysseyInstance {
   const irene = instance.addPerson("irene", "designer");
 
   // Add some priorities
-  const hackathon = instance.addPriority("hackathon", "everything must happen");
   const design = instance.addPriority("design", "design is everything");
   const implementation = instance.addPriority(
     "implementation",
@@ -28,9 +27,6 @@ export function example(): OdysseyInstance {
     "logistics enables everything"
   );
 
-  instance.addEdge(hackathon, design);
-  instance.addEdge(hackathon, logistics);
-  instance.addEdge(hackathon, implementation);
   instance.addEdge(implementation, design);
 
   // Add contributions
@@ -106,11 +102,6 @@ export function example(): OdysseyInstance {
   instance.addEdge(max, sarah);
   instance.addEdge(irene, sarah);
   instance.addEdge(dennis, sarah);
-
-  // the following is a crude approximation of having seed vectors.
-  for (const person of Array.from(instance.people())) {
-    instance.addEdge(person, hackathon);
-  }
 
   return instance;
 }
