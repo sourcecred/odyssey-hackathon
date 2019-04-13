@@ -52,7 +52,7 @@ export class OdysseyInstance {
     this._addressToEntity = new Map();
   }
 
-  _addNode(
+  addEntity(
     name: string,
     description: string,
     type: OdysseyEntityType
@@ -68,21 +68,25 @@ export class OdysseyInstance {
     return e;
   }
 
-  // Returns whether the given name is present in the instance.
-  // If it is, then no node with this name may be added.
-  hasName(name: string): boolean {
-    return this._names.has(name);
-  }
-
   *_entitiesOfPrefix(prefix: NodeAddressT): Iterator<OdysseyEntity> {
     for (const a of this._graph.nodes({prefix})) {
       yield NullUtil.get(this._addressToEntity.get(a));
     }
   }
 
+  entities(): Iterator<OdysseyEntity> {
+    return this._entitiesOfPrefix(NodePrefix.base);
+  }
+
+  // Returns whether the given name is present in the instance.
+  // If it is, then no node with this name may be added.
+  hasName(name: string): boolean {
+    return this._names.has(name);
+  }
+
   // Add a new Priority node. May error if this name was ever used before.
   addPriority(name: string, description: string): OdysseyEntity {
-    return this._addNode(name, description, "PRIORITY");
+    return this.addEntity(name, description, "PRIORITY");
   }
 
   priorities(): Iterator<OdysseyEntity> {
@@ -91,7 +95,7 @@ export class OdysseyInstance {
 
   // Add a new Person node. May error if this name was ever used before.
   addPerson(name: string, description: string): OdysseyEntity {
-    return this._addNode(name, description, "PERSON");
+    return this.addEntity(name, description, "PERSON");
   }
 
   people(): Iterator<OdysseyEntity> {
@@ -100,7 +104,7 @@ export class OdysseyInstance {
 
   // Add a new Contribution node. May error if this name was ever used before.
   addContribution(name: string, description: string): OdysseyEntity {
-    return this._addNode(name, description, "CONTRIBUTION");
+    return this.addEntity(name, description, "CONTRIBUTION");
   }
 
   contributions(): Iterator<OdysseyEntity> {

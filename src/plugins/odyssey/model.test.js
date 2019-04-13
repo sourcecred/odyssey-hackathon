@@ -7,33 +7,42 @@ import {EdgeAddress} from "../../core/graph";
 describe("plugins/odyssey/model", () => {
   const example = () => {
     const instance = new OdysseyInstance();
+    const expectedEntities = [];
 
     // Add people
     const me = instance.addPerson("me", "the author of the code");
-    const myPartner = instance.addPerson(
+    expectedEntities.push(me);
+    // You can add an entity using the generic API if you prefer
+    const myPartner = instance.addEntity(
       "my partner",
-      "a wonderful human being"
+      "a wonderful human being",
+      "PERSON"
     );
+    expectedEntities.push(myPartner);
 
     // Add some priorities
     const hackathonPriority = instance.addPriority(
       "hackathon",
       "it's what we're working on"
     );
+    expectedEntities.push(hackathonPriority);
     const testingPriority = instance.addPriority(
       "testing",
       "it's very important"
     );
+    expectedEntities.push(testingPriority);
 
     // Add contributions
     const odysseyModule = instance.addContribution(
       "odyssey/model.js",
       "some nice looking source code"
     );
+    expectedEntities.push(odysseyModule);
     const thisFile = instance.addContribution(
       "odyssey/model.test.js",
       "a very fine test file"
     );
+    expectedEntities.push(thisFile);
 
     // Helper function to make it easy to check the edges
     const expectedEdges = [];
@@ -66,6 +75,7 @@ describe("plugins/odyssey/model", () => {
       thisFile,
       odysseyModule,
       expectedEdges,
+      expectedEntities,
     };
   };
 
@@ -85,6 +95,16 @@ describe("plugins/odyssey/model", () => {
     const {instance, odysseyModule, thisFile} = example();
     const contributions = Array.from(instance.contributions());
     expect(contributions).toEqual([odysseyModule, thisFile]);
+  });
+
+  it("can retrieve all entities", () => {
+    const {instance, expectedEntities} = example();
+    const allEntities = Array.from(instance.entities());
+    expect(allEntities).toHaveLength(expectedEntities.length);
+    for (const entity of expectedEntities) {
+      const index = allEntities.findIndex((x) => deepEqual(x, entity));
+      expect(index).not.toBe(-1);
+    }
   });
 
   it("errors if a name is duplicated (even across types)", () => {
