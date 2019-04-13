@@ -17,6 +17,15 @@ const INTERPOLATE_LOW = "#00ABE1";
 const INTERPOLATE_HIGH = "#90FF03";
 const EDGE_COLOR = "#111111";
 
+// Orange for prioity
+const PRIORITY_COLORS = ["#FFD64C", "#FF5200"];
+
+// Blue (purple?)
+const PERSON_COLORS = ["#00FFd1", "#00ffff"];
+
+// Green
+const CONTRIBUTION_COLORS = ["#fd83ff", "#ff0000"];
+
 export class AppPage extends React.Component<{|
   +assets: Assets,
 |}> {
@@ -70,7 +79,20 @@ export class GraphViz extends React.Component<{}> {
 
     function colorFor(d) {
       const scoreRatio = d.score / maxScore;
-      return d3.interpolate(INTERPOLATE_LOW, INTERPOLATE_HIGH)(scoreRatio);
+      switch (d.type) {
+        case "PERSON":
+          return d3.interpolate(PERSON_COLORS[0], PERSON_COLORS[1])(scoreRatio);
+        case "CONTRIBUTION":
+          return d3.interpolate(CONTRIBUTION_COLORS[0], CONTRIBUTION_COLORS[1])(
+            scoreRatio
+          );
+        case "PRIORITY":
+          return d3.interpolate(PRIORITY_COLORS[0], PRIORITY_COLORS[1])(
+            scoreRatio
+          );
+        default:
+          throw new Error("Unrecognized type.");
+      }
     }
 
     function mouseOver() {
