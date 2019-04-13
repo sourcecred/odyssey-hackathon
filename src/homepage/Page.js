@@ -93,8 +93,10 @@ export default class Page extends React.Component<{|
 }
 
 const footerHeight = 30;
+const BACKGROUND_COLOR = "#313131";
 const style = StyleSheet.create({
   footer: {
+    backgroundColor: BACKGROUND_COLOR,
     color: "#666",
     height: footerHeight,
     fontSize: 14,
@@ -118,6 +120,7 @@ const style = StyleSheet.create({
     minHeight: `calc(100vh - ${footerHeight}px)`,
     display: "flex",
     flexDirection: "column",
+    backgroundColor: "#212121",
   },
   nav: {
     padding: "20px 50px 0 50px",
@@ -165,8 +168,5 @@ const style = StyleSheet.create({
     height: 25,
     width: 25,
     transform: "translateY(-1px)",
-  },
-  body: {
-    backgroundColor: "#212121",
   },
 });
