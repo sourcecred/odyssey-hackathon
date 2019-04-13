@@ -91,6 +91,8 @@ export class OdysseyViz extends React.Component<
   render() {
     const nodes = this.state.nodes;
     const edges = this.state.edges;
+    const sn = this.state.selectedNode;
+    let neighbors = [];
     return (
       <GraphViz
         nodes={nodes}
@@ -135,6 +137,7 @@ export class GraphViz extends React.Component<GraphVizProps> {
   _mouseOff: any;
   _ticked: any;
   _selectedNodeHalo: any;
+  _selectedNeighborHalo: any;
 
   _computeMax() {
     this._maxScore = -Infinity;
@@ -181,6 +184,7 @@ export class GraphViz extends React.Component<GraphVizProps> {
 
     this._edgesG = this._chart.append("g");
     this._selectedNodeHalo = this._chart.append("g");
+    this._selectedNeighborHalo = this._chart.append("g");
     this._nodesG = this._chart.append("g");
     this._textG = this._chart.append("g");
 
@@ -223,6 +227,12 @@ export class GraphViz extends React.Component<GraphVizProps> {
           "cy",
           this.props.selectedNode ? (this.props.selectedNode: any).y : 0
         );
+
+      this._selectedNeighborHalo
+        .selectAll(".halo-neighbor")
+        // The hack is strong with this one!!
+        .attr("cx", (d) => d.x)
+        .attr("cy", (d) => d.y);
 
       this._textG
         .selectAll(".text")
@@ -289,6 +299,59 @@ export class GraphViz extends React.Component<GraphVizProps> {
       .ease(d3.easeQuad)
       .duration(500)
       .attr("r", (d) => this._radius(selectedNode) + 2 + d * d);
+  }
+
+  _updateSelectedNeighborHalo(links: any) {
+    const selectedNeighbors = [];
+    const seenNeighborAddresses = new Set();
+    if (this.props.selectedNode != null) {
+      const snAddr = this.props.selectedNode.address;
+      for (const {source, target} of links) {
+        let neighbor = null;
+        if (snAddr == source.address) {
+          neighbor = target;
+        }
+        if (snAddr == target.address) {
+          neighbor = source;
+        }
+        if (
+          neighbor != null &&
+          !seenNeighborAddresses.has(neighbor.address) &&
+          snAddr !== neighbor
+        ) {
+          seenNeighborAddresses.add(neighbor.address);
+          selectedNeighbors.push(neighbor);
+        }
+      }
+    }
+    const haloNeighborSelection = this._selectedNeighborHalo
+      .selectAll(".halo-neighbor")
+      .data(selectedNeighbors);
+    haloNeighborSelection
+      .exit()
+      .transition()
+      .ease(d3.easeQuad)
+      .duration(1000)
+      .remove();
+
+    const newNodes = haloNeighborSelection
+      .enter()
+      .append("circle")
+      .attr("class", "halo-neighbor");
+
+    haloNeighborSelection
+      .merge(newNodes)
+      .attr("stroke", HALO_COLOR)
+      .attr("cx", (d) => d.x)
+      .attr("cy", (d) => d.y)
+      .attr("stroke-width", 1)
+      .attr("opacity", (d) => 1 / 2)
+      .attr("fill", "none")
+      .attr("r", 0)
+      .transition()
+      .ease(d3.easeQuad)
+      .duration(500)
+      .attr("r", (d) => this._radius(d) + 3);
   }
 
   _updateD3() {
@@ -406,6 +469,7 @@ export class GraphViz extends React.Component<GraphVizProps> {
       });
 
     this._updateSelectedHalo();
+    this._updateSelectedNeighborHalo(links);
   }
 
   componentDidMount() {
