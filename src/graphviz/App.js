@@ -170,7 +170,7 @@ export class GraphViz extends React.Component<GraphVizProps> {
         .style("top", d3.event.pageY - 30 + "px")
         .style("display", "inline-block")
         .html(() => {
-          return textDisplay;
+          return `${data.name}: ${data.description}`;
         });
     };
 
