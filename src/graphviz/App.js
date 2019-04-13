@@ -37,16 +37,14 @@ export class GraphViz extends React.Component<{}> {
   simulation: any;
 
   async componentDidMount() {
-    const width = 1500;
-    const height = 800;
     const svg = d3
       .select(this._rootNode)
       .append("svg")
-      .attr("width", width)
-      .attr("height", height);
+      .style("flex-grow", 1);
+    const rect = svg.node().getBoundingClientRect();
     const chart = svg
       .append("g")
-      .attr("transform", `translate(${width / 2}, ${height / 2})`);
+      .attr("transform", `translate(${rect.width / 2}, ${rect.height / 2})`);
 
     const tooltip = d3
       .select(this._rootNode)
@@ -268,7 +266,12 @@ export class GraphViz extends React.Component<{}> {
   render() {
     return (
       <div
-        style={{backgroundColor: BACKGROUND_COLOR}}
+        style={{
+          backgroundColor: BACKGROUND_COLOR,
+          flexGrow: 1,
+          display: "flex",
+          flexDirection: "column",
+        }}
         className="graph-container"
         ref={this._setRef.bind(this)}
       />

@@ -78,7 +78,7 @@ export default class Page extends React.Component<{|
               </ul>
             </nav>
           </header>
-          <main>{this.props.children}</main>
+          <main className={css(style.main)}>{this.props.children}</main>
         </div>
         <footer className={css(style.footer)}>
           <div className={css(style.footerWrapper)}>
@@ -100,6 +100,11 @@ const style = StyleSheet.create({
     fontSize: 14,
     position: "relative",
   },
+  main: {
+    flexGrow: 1,
+    display: "flex",
+    flexDirection: "column",
+  },
   footerWrapper: {
     textAlign: "right",
     position: "absolute",
@@ -111,6 +116,8 @@ const style = StyleSheet.create({
   },
   nonFooter: {
     minHeight: `calc(100vh - ${footerHeight}px)`,
+    display: "flex",
+    flexDirection: "column",
   },
   nav: {
     padding: "20px 50px 0 50px",
