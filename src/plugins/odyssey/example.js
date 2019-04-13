@@ -2,7 +2,7 @@
 
 import {OdysseyInstance} from "./model";
 
-function example(): OdysseyInstance {
+export function example(): OdysseyInstance {
   const instance = new OdysseyInstance();
 
   // Add people

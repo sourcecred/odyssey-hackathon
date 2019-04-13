@@ -8,6 +8,7 @@ import CheckedLocalStore from "../webutil/checkedLocalStore";
 import BrowserLocalStore from "../webutil/browserLocalStore";
 import Link from "../webutil/Link";
 import * as d3 from "d3";
+import {example} from "../plugins/odyssey/example";
 
 export class AppPage extends React.Component<{|
   +assets: Assets,
@@ -26,18 +27,98 @@ export class AppPage extends React.Component<{|
 
 export class GraphViz extends React.Component<{}> {
   _rootNode: HTMLDivElement | null;
+  simulation: any;
 
   componentDidMount() {
+    const width = 1000;
+    const height = 1000;
     const svg = d3
       .select(this._rootNode)
       .append("svg")
-      .attr("width", 700)
-      .attr("height", 700);
-    svg
+      .attr("width", width)
+      .attr("height", height);
+    const chart = svg
+      .append("g")
+      .attr("transform", `translate(${width / 2}, ${height / 2})`);
+
+    const nodesG = chart.append("g");
+    const edgesG = chart.append("g");
+
+    const instance = example();
+    const graph = instance.graph();
+    const nodes = Array.from(instance.entities());
+
+    const links = Array.from(graph.edges()).map((e) => ({
+      source: e.src,
+      target: e.dst,
+      address: e.address,
+    }));
+
+    const ticked = () => {
+      nodesG
+        .selectAll(".node")
+        .attr("cx", function(d) {
+          return d.x;
+        })
+        .attr("cy", function(d) {
+          return d.y;
+        });
+
+      //TODO: fix arrow marker by moving back based on the node radius
+      edgesG
+        .selectAll(".edge")
+        .attr("x1", function(d) {
+          return d.source.x;
+        })
+        .attr("y1", function(d) {
+          return d.source.y;
+        })
+        .attr("x2", function(d) {
+          return d.target.x;
+        })
+        .attr("y2", function(d) {
+          return d.target.y;
+        });
+    };
+    this.simulation = d3
+      .forceSimulation(nodes)
+      .force("charge", d3.forceManyBody(-30))
+      .force(
+        "link",
+        d3
+          .forceLink()
+          .id((d) => d.address)
+          .links(links)
+          .distance(30)
+      )
+      .force("collide", d3.forceCollide().radius(5))
+      .force("x", d3.forceX())
+      .force("y", d3.forceY())
+      .alphaTarget(1)
+      .on("tick", ticked);
+
+    const nodeSelection = nodesG.selectAll(".node").data(nodes);
+    nodeSelection
+      .exit()
+      .transition()
+      .ease(d3.easeQuad)
+      .duration(1000)
+      .remove();
+    const newNodes = nodeSelection
+      .enter()
       .append("circle")
-      .attr("cx", 20)
-      .attr("cy", 30)
-      .attr("r", 3);
+      .attr("class", "node");
+    nodeSelection
+      .merge(newNodes)
+      .transition()
+      .ease(d3.easeQuad)
+      .duration(1000)
+      .attr("fill", function(d) {
+        return "steelblue";
+      })
+      .attr("r", function(d) {
+        return 5;
+      });
   }
 
   componentDidUpdate() {
