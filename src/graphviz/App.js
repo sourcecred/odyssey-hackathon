@@ -19,6 +19,7 @@ import * as NullUtil from "../util/null";
 
 const BACKGROUND_COLOR = "#313131";
 const EDGE_COLOR = "#111111";
+const HALO_COLOR = "#90FF03";
 
 const COLORS_BY_TYPE = {
   PERSON: ["#C4E2FF", "#2D88DC"],
@@ -46,9 +47,15 @@ export class AppPage extends React.Component<{|
 export type OdysseyVizProps = {|
   +instance: OdysseyInstance,
 |};
+export type OdysseyVizState = {|
+  +nodes: $ReadOnlyArray<ScoredEntity>,
+  +edges: $ReadOnlyArray<Edge>,
+  +selectedNode: ScoredEntity | null,
+|};
+
 export class OdysseyViz extends React.Component<
   OdysseyVizProps,
-  GraphVizProps
+  OdysseyVizState
 > {
   _pagerankGraph: PagerankGraph;
 
@@ -61,6 +68,7 @@ export class OdysseyViz extends React.Component<
     this.state = {
       edges: Array.from(this.props.instance.graph().edges()),
       nodes: this._computeNodes(),
+      selectedNode: null,
     };
   }
 
@@ -83,7 +91,14 @@ export class OdysseyViz extends React.Component<
   render() {
     const nodes = this.state.nodes;
     const edges = this.state.edges;
-    return <GraphViz nodes={nodes} edges={edges} />;
+    return (
+      <GraphViz
+        nodes={nodes}
+        edges={edges}
+        selectedNode={this.state.selectedNode}
+        onSelect={(selectedNode) => this.setState({selectedNode})}
+      />
+    );
   }
 }
 
@@ -98,6 +113,8 @@ export type ScoredEntity = {|
 export type GraphVizProps = {|
   +nodes: $ReadOnlyArray<ScoredEntity>,
   +edges: $ReadOnlyArray<Edge>,
+  +selectedNode: ScoredEntity | null,
+  +onSelect: (n: ScoredEntity) => void,
 |};
 
 // For graph visualization: inspiration and code from Ryan Morton:
@@ -117,6 +134,7 @@ export class GraphViz extends React.Component<GraphVizProps> {
   _mouseOver: any;
   _mouseOff: any;
   _ticked: any;
+  _selectedNodeHalo: any;
 
   _computeMax() {
     this._maxScore = -Infinity;
@@ -134,7 +152,12 @@ export class GraphViz extends React.Component<GraphVizProps> {
   }
 
   _radius(d: ScoredEntity) {
-    return Math.sqrt((d.score / this._maxScore) * MAX_SIZE_PIXELS);
+    // Use the square of the score as radius, so area will be proportional to score
+    const v = Math.sqrt((d.score / this._maxScore) * MAX_SIZE_PIXELS);
+    if (!isFinite(v)) {
+      throw new Error("bad radius");
+    }
+    return v;
   }
 
   _setupScaffold() {
@@ -157,6 +180,7 @@ export class GraphViz extends React.Component<GraphVizProps> {
       .style("background", "none repeat scroll 0 0 #ffffff");
 
     this._edgesG = this._chart.append("g");
+    this._selectedNodeHalo = this._chart.append("g");
     this._nodesG = this._chart.append("g");
     this._textG = this._chart.append("g");
 
@@ -188,6 +212,18 @@ export class GraphViz extends React.Component<GraphVizProps> {
           return d.y;
         });
 
+      this._selectedNodeHalo
+        .selectAll(".halo")
+        // The hack is strong with this one!!
+        .attr(
+          "cx",
+          this.props.selectedNode ? (this.props.selectedNode: any).x : 0
+        )
+        .attr(
+          "cy",
+          this.props.selectedNode ? (this.props.selectedNode: any).y : 0
+        );
+
       this._textG
         .selectAll(".text")
         .attr("x", (d) => {
@@ -213,6 +249,46 @@ export class GraphViz extends React.Component<GraphVizProps> {
           return d.target.y;
         });
     };
+  }
+
+  _updateSelectedHalo() {
+    // hello mr. hack
+    const selectedNode: any = this.props.selectedNode || {
+      x: 0,
+      y: 0,
+      type: "PRIORITY",
+      address: "",
+      score: 0,
+      description: "",
+      name: "hacky phantom node",
+    };
+    const data = this.props.selectedNode == null ? [] : [1, 2, 3];
+    const haloSelection = this._selectedNodeHalo.selectAll(".halo").data(data);
+    haloSelection
+      .exit()
+      .transition()
+      .ease(d3.easeQuad)
+      .duration(1000)
+      .remove();
+
+    const newNodes = haloSelection
+      .enter()
+      .append("circle")
+      .attr("class", "halo");
+
+    haloSelection
+      .merge(newNodes)
+      .attr("stroke", HALO_COLOR)
+      .attr("cx", selectedNode.x)
+      .attr("cy", selectedNode.y)
+      .attr("stroke-width", 1)
+      .attr("opacity", (d) => 1 / (2 * d))
+      .attr("fill", "none")
+      .attr("r", 0)
+      .transition()
+      .ease(d3.easeQuad)
+      .duration(500)
+      .attr("r", (d) => this._radius(selectedNode) + 2 + d * d);
   }
 
   _updateD3() {
@@ -258,7 +334,10 @@ export class GraphViz extends React.Component<GraphVizProps> {
       .append("circle")
       .attr("class", "node")
       .on("mouseover", this._mouseOver)
-      .on("mouseout", this._mouseOff);
+      .on("mouseout", this._mouseOff)
+      .on("click", (d) => {
+        this.props.onSelect(d);
+      });
 
     nodeSelection
       .merge(newNodes)
@@ -313,9 +392,20 @@ export class GraphViz extends React.Component<GraphVizProps> {
         return "1px";
       })
       .attr("opacity", "0.4")
-      .attr("stroke", () => {
+      .attr("stroke", (d) => {
+        const sn = this.props.selectedNode;
+        if (sn) {
+          if (
+            d.source.address === sn.address ||
+            d.target.address === sn.address
+          ) {
+            return HALO_COLOR;
+          }
+        }
         return EDGE_COLOR;
       });
+
+    this._updateSelectedHalo();
   }
 
   componentDidMount() {
