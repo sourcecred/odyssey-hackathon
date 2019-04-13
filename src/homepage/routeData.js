@@ -33,7 +33,7 @@ function makeRouteData(registry /*: RepoIdRegistry */) /*: RouteData */ {
       path: "/",
       contents: {
         type: "PAGE",
-        component: () => require("./HomePage").default,
+        component: () => require("../graphviz/App").AppPage,
       },
       title: "SourceCred",
       navTitle: "Home",
