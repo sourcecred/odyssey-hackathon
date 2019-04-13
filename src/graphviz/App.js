@@ -18,13 +18,13 @@ const INTERPOLATE_HIGH = "#90FF03";
 const EDGE_COLOR = "#111111";
 
 // Orange for prioity
-const PRIORITY_COLORS = ["#FFD64C", "#FF5200"];
+const PRIORITY_COLORS = ["#FFD3A0", "#FF8B03"];
 
 // Blue (purple?)
-const PERSON_COLORS = ["#00FFd1", "#00ffff"];
+const PERSON_COLORS = ["#C4E2FF", "#2D88DC"];
 
 // Green
-const CONTRIBUTION_COLORS = ["#fd83ff", "#ff0000"];
+const CONTRIBUTION_COLORS = ["#FEBAFF", "#8600C6"];
 
 export class AppPage extends React.Component<{|
   +assets: Assets,
@@ -78,6 +78,7 @@ export class GraphViz extends React.Component<{}> {
     await prg.runPagerank({maxIterations: 100, convergenceThreshold: 1e-3});
 
     function colorFor(d) {
+      const maxForType = minMaxByType[d.type][1];
       const scoreRatio = d.score / maxScore;
       switch (d.type) {
         case "PERSON":
@@ -119,12 +120,26 @@ export class GraphViz extends React.Component<{}> {
 
     let minScore = Infinity;
     let maxScore = -Infinity;
-    for (const {score} of nodes) {
+
+    const minMaxByType = {
+      PERSON: [Infinity, -Infinity],
+      CONTRIBUTION: [Infinity, -Infinity],
+      PRIORITY: [Infinity, -Infinity],
+    };
+
+    for (const {score, type} of nodes) {
       if (score < minScore) {
         minScore = score;
       }
       if (score > maxScore) {
         maxScore = score;
+      }
+      const minMax = minMaxByType[type];
+      if (score < minMax[0]) {
+        minMax[0] = score;
+      }
+      if (score > minMax[1]) {
+        minMax[1] = score;
       }
     }
 
@@ -158,10 +173,10 @@ export class GraphViz extends React.Component<{}> {
       textG
         .selectAll(".text")
         .attr("x", function(d) {
-          return d.x + radius(d);
+          return d.x + radius(d) + 5;
         })
         .attr("y", function(d) {
-          return d.y + radius(d);
+          return d.y + 5;
         });
 
       //TODO: fix arrow marker by moving back based on the node radius
@@ -243,8 +258,8 @@ export class GraphViz extends React.Component<{}> {
       .text(function(d) {
         return Math.floor(d.score * 1000);
       })
-      .attr("fill", colorFor);
-    //.attr("font-size", (d) => d.score * 300);
+      .attr("fill", colorFor)
+      .attr("font-size", 14);
 
     // edge data join
     var edge = edgesG.selectAll(".edge").data(links);
