@@ -2,12 +2,17 @@
 
 import React from "react";
 
+import {type NodeAddressT, type Edge} from "../core/graph";
 import type {Assets} from "../webutil/assets";
 import type {LocalStore} from "../webutil/localStore";
 import CheckedLocalStore from "../webutil/checkedLocalStore";
 import BrowserLocalStore from "../webutil/browserLocalStore";
 import Link from "../webutil/Link";
 import * as d3 from "d3";
+import {
+  OdysseyInstance,
+  type OdysseyEntityType,
+} from "../plugins/odyssey/model";
 import {example} from "../plugins/odyssey/example";
 import {PagerankGraph} from "../core/pagerankGraph";
 import * as NullUtil from "../util/null";
@@ -37,11 +42,69 @@ export class AppPage extends React.Component<{|
   );
 
   render() {
-    return <GraphViz _rootNode={null} />;
+    return <OdysseyViz instance={example()} />;
   }
 }
 
-export class GraphViz extends React.Component<{}> {
+export type OdysseyVizProps = {|
+  +instance: OdysseyInstance,
+|};
+export class OdysseyViz extends React.Component<
+  OdysseyVizProps,
+  GraphVizProps
+> {
+  _pagerankGraph: PagerankGraph;
+
+  constructor(props: OdysseyVizProps) {
+    super(props);
+    this._pagerankGraph = new PagerankGraph(
+      this.props.instance.graph(),
+      (_unused_edge) => ({toWeight: 1, froWeight: 0.1})
+    );
+    this.state = {
+      edges: Array.from(this.props.instance.graph().edges()),
+      nodes: this._computeNodes(),
+    };
+  }
+
+  _computeNodes(): $ReadOnlyArray<ScoredEntity> {
+    return Array.from(this.props.instance.entities()).map((x) => ({
+      score: NullUtil.get(this._pagerankGraph.node(x.address)).score,
+      ...x,
+    }));
+  }
+
+  async componentDidMount() {
+    await this._pagerankGraph.runPagerank({
+      maxIterations: 100,
+      convergenceThreshold: 1e-3,
+    });
+    this.setState({nodes: this._computeNodes()});
+  }
+
+  render() {
+    return <GraphViz nodes={this.state.nodes} edges={this.state.edges} />;
+  }
+}
+
+export type ScoredEntity = {|
+  +address: NodeAddressT,
+  +type: OdysseyEntityType,
+  +score: number,
+  +name: string,
+  +description: string,
+|};
+
+export type GraphVizProps = {|
+  +nodes: $ReadOnlyArray<ScoredEntity>,
+  +edges: $ReadOnlyArray<Edge>,
+|};
+
+// For graph visualization: inspiration and code from Ryan Morton:
+// https://discourse.sourcecred.io/t/research-design-exploratory-data-analysis/67
+// For React + D3 integration: based on work by Nicolas Hery
+// http://nicolashery.com/integrating-d3js-visualizations-in-a-react-app/
+export class GraphViz extends React.Component<GraphVizProps> {
   _rootNode: HTMLDivElement | null;
   simulation: any;
 
@@ -69,16 +132,8 @@ export class GraphViz extends React.Component<{}> {
     const nodesG = chart.append("g");
     const textG = chart.append("g");
 
-    const instance = example();
-    const graph = instance.graph();
-    const prg = new PagerankGraph(graph, (_unused_edge) => ({
-      toWeight: 1,
-      froWeight: 0.1,
-    }));
-    await prg.runPagerank({maxIterations: 100, convergenceThreshold: 1e-3});
-
-    function colorFor(d) {
-      const maxForType = minMaxByType[d.type][1];
+    function colorFor(d: ScoredEntity) {
+      const maxForType = maxByType[d.type];
       const scoreRatio = d.score / maxScore;
       switch (d.type) {
         case "PERSON":
@@ -113,50 +168,29 @@ export class GraphViz extends React.Component<{}> {
       tooltip.style("display", "none");
     }
 
-    const nodes = Array.from(instance.entities()).map((x) => ({
-      score: NullUtil.get(prg.node(x.address)).score,
-      ...x,
-    }));
-
-    let minScore = Infinity;
     let maxScore = -Infinity;
-
-    const minMaxByType = {
-      PERSON: [Infinity, -Infinity],
-      CONTRIBUTION: [Infinity, -Infinity],
-      PRIORITY: [Infinity, -Infinity],
+    const maxByType = {
+      PERSON: -Infinity,
+      CONTRIBUTION: -Infinity,
+      PRIORITY: -Infinity,
     };
 
-    for (const {score, type} of nodes) {
-      if (score < minScore) {
-        minScore = score;
-      }
+    for (const {score, type} of this.props.nodes) {
       if (score > maxScore) {
         maxScore = score;
       }
-      const minMax = minMaxByType[type];
-      if (score < minMax[0]) {
-        minMax[0] = score;
-      }
-      if (score > minMax[1]) {
-        minMax[1] = score;
+      if (score > maxByType[type]) {
+        maxByType[type] = score;
       }
     }
 
-    let totalUserScore = 0;
-    for (const {score, type} of nodes) {
-      if (type === "PERSON") {
-        totalUserScore += score;
-      }
-    }
-
-    const links = Array.from(graph.edges()).map((e) => ({
+    const links = this.props.edges.map((e) => ({
       source: e.src,
       target: e.dst,
       address: e.address,
     }));
 
-    function radius(d) {
+    function radius(d: ScoredEntity) {
       return Math.sqrt((d.score / maxScore) * 200);
     }
 
@@ -196,7 +230,7 @@ export class GraphViz extends React.Component<{}> {
         });
     };
     this.simulation = d3
-      .forceSimulation(nodes)
+      .forceSimulation(this.props.nodes)
       .force("charge", d3.forceManyBody().strength(-380))
       .force(
         "link",
@@ -216,7 +250,7 @@ export class GraphViz extends React.Component<{}> {
       .force("y", d3.forceY())
       .on("tick", ticked);
 
-    const nodeSelection = nodesG.selectAll(".node").data(nodes);
+    const nodeSelection = nodesG.selectAll(".node").data(this.props.nodes);
     nodeSelection
       .exit()
       .transition()
@@ -238,7 +272,7 @@ export class GraphViz extends React.Component<{}> {
       .attr("fill", colorFor)
       .attr("r", radius);
 
-    const textSelection = textG.selectAll(".text").data(nodes);
+    const textSelection = textG.selectAll(".text").data(this.props.nodes);
     textSelection
       .exit()
       .transition()
