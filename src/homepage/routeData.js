@@ -39,6 +39,15 @@ function makeRouteData(registry /*: RepoIdRegistry */) /*: RouteData */ {
       navTitle: "Home",
     },
     {
+      path: "/graphviz/",
+      contents: {
+        type: "PAGE",
+        component: () => require("../graphviz/App").AppPage,
+      },
+      title: "SourceCred",
+      navTitle: "GraphViz experiment",
+    },
+    {
       path: "/prototype/",
       contents: {
         type: "PAGE",
