@@ -1,10 +1,11 @@
-// @flow
+// @no-flow
+// just dont see the benefit to using flow here.
 import React from "react";
 import ReactDOM from "react-dom";
 import {AppContainer} from "react-hot-loader";
 import "./index.scss";
 
-import App from "components/App/App";
+import App from "./components/App/App";
 
 const render = (Component) => {
   ReactDOM.render(
