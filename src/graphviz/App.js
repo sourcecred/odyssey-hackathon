@@ -12,6 +12,7 @@ import * as d3 from "d3";
 import {
   OdysseyInstance,
   type OdysseyEntityType,
+  NodePrefix,
 } from "../plugins/odyssey/model";
 import {example} from "../plugins/odyssey/example";
 import {PagerankGraph} from "../core/pagerankGraph";
@@ -50,7 +51,7 @@ export type OdysseyVizProps = {|
 export type OdysseyVizState = {|
   +nodes: $ReadOnlyArray<ScoredEntity>,
   +edges: $ReadOnlyArray<Edge>,
-  +selectedNode: ScoredEntity | null,
+  +selectedNode: NodeAddressT | null,
 |};
 
 export class OdysseyViz extends React.Component<
@@ -80,7 +81,11 @@ export class OdysseyViz extends React.Component<
   }
 
   async componentDidMount() {
-    await this._pagerankGraph.runPagerank({
+    const selectedNodes = Array.from(
+      this.props.instance.graph().nodes({prefix: NodePrefix.priority})
+    );
+    const seed = {type: "SELECTED_SEED", selectedNodes, alpha: 0.3};
+    await this._pagerankGraph.runPagerank(seed, {
       maxIterations: 100,
       convergenceThreshold: 1e-3,
     });
@@ -88,17 +93,31 @@ export class OdysseyViz extends React.Component<
     this.setState({nodes});
   }
 
+  async updateSelectedNode(node: NodeAddressT) {
+    this.setState({selectedNode: node});
+    const seed = {
+      type: "SELECTED_SEED",
+      selectedNodes: [node],
+      alpha: 0.3,
+    };
+    await this._pagerankGraph.runPagerank(seed, {
+      maxIterations: 100,
+      convergenceThreshold: 1e-3,
+    });
+    const nodes = this._computeNodes();
+    console.log("about to apply PRG changes");
+    this.setState({nodes});
+  }
+
   render() {
     const nodes = this.state.nodes;
     const edges = this.state.edges;
-    const sn = this.state.selectedNode;
-    let neighbors = [];
     return (
       <GraphViz
         nodes={nodes}
         edges={edges}
         selectedNode={this.state.selectedNode}
-        onSelect={(selectedNode) => this.setState({selectedNode})}
+        onSelect={(selectedNode) => this.updateSelectedNode(selectedNode)}
       />
     );
   }
@@ -115,8 +134,8 @@ export type ScoredEntity = {|
 export type GraphVizProps = {|
   +nodes: $ReadOnlyArray<ScoredEntity>,
   +edges: $ReadOnlyArray<Edge>,
-  +selectedNode: ScoredEntity | null,
-  +onSelect: (n: ScoredEntity) => void,
+  +selectedNode: NodeAddressT | null,
+  +onSelect: (n: NodeAddressT) => Promise<void>,
 |};
 
 // For graph visualization: inspiration and code from Ryan Morton:
@@ -138,6 +157,7 @@ export class GraphViz extends React.Component<GraphVizProps> {
   _ticked: any;
   _selectedNodeHalo: any;
   _selectedNeighborHalo: any;
+  linkForce: any;
 
   _computeMax() {
     this._maxScore = -Infinity;
@@ -156,11 +176,17 @@ export class GraphViz extends React.Component<GraphVizProps> {
 
   _radius(d: ScoredEntity) {
     // Use the square of the score as radius, so area will be proportional to score
-    const v = Math.sqrt((d.score / this._maxScore) * MAX_SIZE_PIXELS);
+    const v = Math.sqrt((d.score / this._maxScore) * MAX_SIZE_PIXELS) + 3;
     if (!isFinite(v)) {
-      throw new Error("bad radius");
+      return 0;
     }
     return v;
+  }
+
+  _getSelectedEntity(): any {
+    return this.props.selectedNode == null
+      ? null
+      : this.props.nodes.find((x) => x.address === this.props.selectedNode);
   }
 
   _setupScaffold() {
@@ -194,8 +220,8 @@ export class GraphViz extends React.Component<GraphVizProps> {
       var textDisplay = data.score;
 
       that._tooltip
-        .style("left", d3.event.pageX - 10 + "px")
-        .style("top", d3.event.pageY - 30 + "px")
+        .style("left", d3.event.pageX + 40 + "px")
+        .style("top", d3.event.pageY + "px")
         .style("display", "inline-block")
         .html(() => {
           return `${data.name}: ${data.description}`;
@@ -216,17 +242,12 @@ export class GraphViz extends React.Component<GraphVizProps> {
           return d.y;
         });
 
+      const selectedEntity = this._getSelectedEntity();
       this._selectedNodeHalo
         .selectAll(".halo")
         // The hack is strong with this one!!
-        .attr(
-          "cx",
-          this.props.selectedNode ? (this.props.selectedNode: any).x : 0
-        )
-        .attr(
-          "cy",
-          this.props.selectedNode ? (this.props.selectedNode: any).y : 0
-        );
+        .attr("cx", selectedEntity ? (selectedEntity: any).x : 0)
+        .attr("cy", selectedEntity ? (selectedEntity: any).y : 0);
 
       this._selectedNeighborHalo
         .selectAll(".halo-neighbor")
@@ -259,19 +280,31 @@ export class GraphViz extends React.Component<GraphVizProps> {
           return d.target.y;
         });
     };
+
+    this.linkForce = d3
+      .forceLink()
+      .id((d) => d.address)
+      .distance(120);
+    this.simulation = d3
+      .forceSimulation()
+      .force("charge", d3.forceManyBody().strength(-380))
+      .force("link", this.linkForce)
+      .force(
+        "collide",
+        d3.forceCollide().radius((d) => {
+          return this._radius(d) * 2;
+        })
+      )
+      .force("x", d3.forceX())
+      .force("y", d3.forceY())
+      .alphaTarget(0.01)
+      .alphaMin(0.001)
+      .on("tick", this._ticked);
   }
 
   _updateSelectedHalo() {
     // hello mr. hack
-    const selectedNode: any = this.props.selectedNode || {
-      x: 0,
-      y: 0,
-      type: "PRIORITY",
-      address: "",
-      score: 0,
-      description: "",
-      name: "hacky phantom node",
-    };
+    const selectedEntity = this._getSelectedEntity();
     const data = this.props.selectedNode == null ? [] : [1, 2, 3];
     const haloSelection = this._selectedNodeHalo.selectAll(".halo").data(data);
     haloSelection
@@ -289,8 +322,8 @@ export class GraphViz extends React.Component<GraphVizProps> {
     haloSelection
       .merge(newNodes)
       .attr("stroke", HALO_COLOR)
-      .attr("cx", selectedNode.x)
-      .attr("cy", selectedNode.y)
+      .attr("cx", selectedEntity ? selectedEntity.x : 0)
+      .attr("cy", selectedEntity ? selectedEntity.y : 0)
       .attr("stroke-width", 1)
       .attr("opacity", (d) => 1 / (2 * d))
       .attr("fill", "none")
@@ -298,14 +331,17 @@ export class GraphViz extends React.Component<GraphVizProps> {
       .transition()
       .ease(d3.easeQuad)
       .duration(500)
-      .attr("r", (d) => this._radius(selectedNode) + 2 + d * d);
+      .attr(
+        "r",
+        (d) => (selectedEntity ? this._radius(selectedEntity) + 2 + d * d : 0)
+      );
   }
 
   _updateSelectedNeighborHalo(links: any) {
     const selectedNeighbors = [];
     const seenNeighborAddresses = new Set();
     if (this.props.selectedNode != null) {
-      const snAddr = this.props.selectedNode.address;
+      const snAddr = this.props.selectedNode;
       for (const {source, target} of links) {
         let neighbor = null;
         if (snAddr == source.address) {
@@ -326,13 +362,8 @@ export class GraphViz extends React.Component<GraphVizProps> {
     }
     const haloNeighborSelection = this._selectedNeighborHalo
       .selectAll(".halo-neighbor")
-      .data(selectedNeighbors);
-    haloNeighborSelection
-      .exit()
-      .transition()
-      .ease(d3.easeQuad)
-      .duration(1000)
-      .remove();
+      .data(selectedNeighbors, (x) => x.address);
+    haloNeighborSelection.exit().remove();
 
     const newNodes = haloNeighborSelection
       .enter()
@@ -362,30 +393,27 @@ export class GraphViz extends React.Component<GraphVizProps> {
       address: e.address,
     }));
 
-    this.simulation = d3
-      .forceSimulation(this.props.nodes)
-      .force("charge", d3.forceManyBody().strength(-380))
-      .force(
-        "link",
-        d3
-          .forceLink()
-          .id((d) => d.address)
-          .links(links)
-          .distance(120)
-      )
-      .force(
-        "collide",
-        d3.forceCollide().radius((d) => {
-          return this._radius(d) * 2;
-        })
-      )
-      .force("x", d3.forceX())
-      .force("y", d3.forceY())
-      .on("tick", this._ticked);
+    this.simulation.nodes(this.props.nodes);
+    this.linkForce.links(links);
+
+    console.log("About to update nodes.");
+
+    // There surely must be a better way to do this.
+    const existingNodes = this._nodesG.selectAll(".node").data();
+    for (const node of this.props.nodes) {
+      for (const en of existingNodes) {
+        if (node.address === en.address) {
+          node.x = en.x;
+          node.y = en.y;
+          node.vx = en.vx;
+          node.vy = en.vy;
+        }
+      }
+    }
 
     const nodeSelection = this._nodesG
       .selectAll(".node")
-      .data(this.props.nodes);
+      .data(this.props.nodes, (x) => x.address);
     nodeSelection
       .exit()
       .transition()
@@ -399,7 +427,7 @@ export class GraphViz extends React.Component<GraphVizProps> {
       .on("mouseover", this._mouseOver)
       .on("mouseout", this._mouseOff)
       .on("click", (d) => {
-        this.props.onSelect(d);
+        this.props.onSelect(d.address);
       });
 
     nodeSelection
@@ -410,7 +438,9 @@ export class GraphViz extends React.Component<GraphVizProps> {
       .attr("fill", this._color.bind(this))
       .attr("r", this._radius.bind(this));
 
-    const textSelection = this._textG.selectAll(".text").data(this.props.nodes);
+    const textSelection = this._textG
+      .selectAll(".text")
+      .data(this.props.nodes, (x) => x.address);
     textSelection
       .exit()
       .transition()
@@ -434,7 +464,7 @@ export class GraphViz extends React.Component<GraphVizProps> {
       .attr("font-size", 14);
 
     // edge data join
-    var edge = this._edgesG.selectAll(".edge").data(links);
+    var edge = this._edgesG.selectAll(".edge").data(links, (x) => x.address);
 
     // edge exit
     edge.exit().remove();
@@ -458,10 +488,7 @@ export class GraphViz extends React.Component<GraphVizProps> {
       .attr("stroke", (d) => {
         const sn = this.props.selectedNode;
         if (sn) {
-          if (
-            d.source.address === sn.address ||
-            d.target.address === sn.address
-          ) {
+          if (d.source.address === sn || d.target.address === sn) {
             return HALO_COLOR;
           }
         }
@@ -470,6 +497,13 @@ export class GraphViz extends React.Component<GraphVizProps> {
 
     this._updateSelectedHalo();
     this._updateSelectedNeighborHalo(links);
+    if (!(window: any).stopSimulation) {
+      this.simulation.restart();
+      this.simulation.alpha(0.3);
+    } else {
+      this.simulation.stop();
+    }
+    this._ticked();
   }
 
   componentDidMount() {
