@@ -110,46 +110,72 @@ export function commonStackExample() {
   const instance = new OdysseyInstance();
 
   // teams
-  const teamOne = instance.addContribution("Team 1", "");
-  const teamTwo = instance.addContribution("Team 2", "");
-  const teamThree = instance.addContribution("Team 3", "");
-  const teamFour = instance.addContribution("Team 4", "");
-  const teamFive = instance.addContribution("Team 5", "");
+  const teamOne = instance.addContribution(
+    "Team 1",
+    "Crowdfunding the commons"
+  );
+  const teamTwo = instance.addContribution("Team 2", "Momentum Voting");
+  const teamThree = instance.addContribution(
+    "Team 3",
+    "Moprheus Proposal Engine"
+  );
+  const teamFour = instance.addContribution("Team 4", "XS Exchange");
+  const teamFive = instance.addContribution("Team 5", "SourceCred");
   const jedi = instance.addContribution("Jedi", "");
 
-  const sara = instance.addPerson("Sara", "");
+  const sara = instance.addPerson("Sara", "SourceCred logistics coordinator");
   instance.addEdge(teamFive, sara);
 
-  const bryan = instance.addPerson("Bryan", "");
+  const bryan = instance.addPerson("Bryan", "Team 4 engineer and visionary");
   instance.addEdge(teamFour, bryan);
   const bryanContr = instance.addContribution("Coordinating with Team 5", "");
   instance.addEdge(bryanContr, bryan);
 
-  const zargham = instance.addPerson("Zargham", "");
+  const zargham = instance.addPerson(
+    "Zargham",
+    "Commons Stack celebrity and mathmetician"
+  );
   instance.addEdge(teamFive, zargham);
 
-  const kris = instance.addPerson("kris", "");
+  const kris = instance.addPerson("kris", "Jedi coordinator and synergist");
   instance.addEdge(jedi, kris);
 
-  const josh = instance.addPerson("Josh", "");
+  const josh = instance.addPerson(
+    "Josh",
+    "Vocal jedi leader and coordinator; great listenr"
+  );
   instance.addEdge(jedi, josh);
 
-  const jeff = instance.addPerson("Jeff", "");
+  const jeff = instance.addPerson(
+    "Jeff",
+    "Content-creator and inter-team facilitator "
+  );
   instance.addEdge(jedi, jeff);
 
-  const will = instance.addPerson("Will", "");
+  const will = instance.addPerson(
+    "Will",
+    "Interops between teams; built shared React components "
+  );
   instance.addEdge(teamOne, will);
 
-  const zoltan = instance.addPerson("Zoltan", "");
+  const zoltan = instance.addPerson("Zoltan", "Front-end engineer");
   instance.addEdge(teamTwo, zoltan);
 
-  const marko = instance.addPerson("Marko", "");
-  const daplion = instance.addPerson("dap-lion", "");
+  const marko = instance.addPerson(
+    "Marko",
+    "Works on design and enabling otheres"
+  );
 
-  const sergei = instance.addPerson("Sergei", "");
+  const sergei = instance.addPerson(
+    "Sergei",
+    "Says yes to everything; communicator"
+  );
   instance.addEdge(teamTwo, sergei);
 
-  const kay = instance.addPerson("Kay", "");
+  const kay = instance.addPerson(
+    "Kay",
+    "Team-wide technical and narrative support specialist"
+  );
   instance.addEdge(teamTwo, kay);
 
   const emily = instance.addPerson("Emily", "");
@@ -160,7 +186,10 @@ export function commonStackExample() {
 
   const lb = instance.addPerson("LB", "");
   instance.addEdge(lb, teamFive);
-  const artwork = instance.addPriority("Artwork", "");
+  const artwork = instance.addPriority(
+    "Artwork",
+    "Art helps communicate vision"
+  );
   instance.addEdge(teamFive, artwork);
   instance.addEdge(artwork, lb);
 
@@ -299,7 +328,10 @@ export function commonStackExample() {
   const boat = instance.addContribution("Boat housing", "");
   instance.addEdge(logistics, boat);
   instance.addEdge(boat, griff);
-  const planeTickets = instance.addContribution("Arranging plane tickets", "");
+  const planeTickets = instance.addContribution(
+    "Arranging plane tickets",
+    "enables contributors to contribute!"
+  );
   instance.addEdge(logistics, planeTickets);
   instance.addEdge(planeTickets, sara);
   instance.addEdge(brian, planeTickets);
@@ -311,11 +343,17 @@ export function commonStackExample() {
   instance.addEdge(teamFour, boat);
   instance.addEdge(teamFive, boat);
 
-  const telegramComms = instance.addContribution("Telegram Communication", "");
+  const telegramComms = instance.addContribution(
+    "Telegram Communication",
+    "Coordinating and energizing the Giveth community through a Telegram channel"
+  );
   instance.addEdge(telegramComms, josh);
 
   // Giveth meeting
-  const givethMeeting = instance.addContribution("Giveth meeting", "");
+  const givethMeeting = instance.addContribution(
+    "Giveth meeting",
+    "Connecting the Giveth teams"
+  );
   instance.addEdge(givethMeeting, griff);
   instance.addEdge(givethMeeting, kris);
   instance.addEdge(givethMeeting, jeff);
@@ -325,19 +363,28 @@ export function commonStackExample() {
   instance.addEdge(teamFour, givethMeeting);
   instance.addEdge(teamFive, givethMeeting);
 
-  const enthusiasm = instance.addPriority("Enthusiasm", "");
+  const enthusiasm = instance.addPriority(
+    "Enthusiasm",
+    "Bringing energy and lifting up your community with a positive attitude"
+  );
   instance.addEdge(enthusiasm, griff);
   instance.addEdge(enthusiasm, josh);
   instance.addEdge(enthusiasm, sergei);
 
-  const softwareDev = instance.addPriority("Software Development", "");
-  const dandelion = instance.addPerson("Dandelion", "");
+  const softwareDev = instance.addPriority(
+    "Software Development",
+    "Builiding the tools for the future"
+  );
+  const dandelion = instance.addPerson("Dandelion", "Types fast");
   instance.addEdge(softwareDev, dandelion);
   instance.addEdge(softwareDev, pavle);
   instance.addEdge(softwareDev, will);
   instance.addEdge(softwareDev, zoltan);
 
-  const orangeVests = instance.addContribution("Coordinated Orange Vests", "");
+  const orangeVests = instance.addContribution(
+    "Coordinated Orange Vests",
+    "Giveth swarm theme!"
+  );
   instance.addEdge(orangeVests, griff);
   instance.addEdge(orangeVests, kris);
   instance.addEdge(teamOne, orangeVests);
@@ -346,20 +393,28 @@ export function commonStackExample() {
   instance.addEdge(teamFour, orangeVests);
   instance.addEdge(teamFive, orangeVests);
 
-  const emotionalLabor = instance.addPriority("Emotional Labor", "");
+  const emotionalLabor = instance.addPriority(
+    "Emotional Labor",
+    "Creating the inspiration to energize development and community building"
+  );
   instance.addEdge(jeffArticle, emotionalLabor);
   instance.addEdge(medArticle, emotionalLabor);
+  instance.addEdge(enthusiasm, emotionalLabor);
+  instance.addEdge(emotionalLabor, griff);
 
   const interTeamCoordination = instance.addPriority(
     "Inter-team coordination",
-    ""
+    "Synergizing the Giveth vision and community"
   );
 
   instance.addEdge(interTeamCoordination, kris);
   instance.addEdge(interTeamCoordination, deam);
   instance.addEdge(interTeamCoordination, abbey);
 
-  const technicalLeadership = instance.addPriority("Technical Leadership", "");
+  const technicalLeadership = instance.addPriority(
+    "Technical Leadership",
+    "People that groups can rely on to make decisions on the technical direction of a project"
+  );
   instance.addEdge(technicalLeadership, dandelion);
   instance.addEdge(technicalLeadership, roberto);
   instance.addEdge(technicalLeadership, zargham);

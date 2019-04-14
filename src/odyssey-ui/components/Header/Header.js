@@ -20,7 +20,7 @@ export class Header extends Component<Props> {
     return (
       <div className={styles.header}>
         <div className={styles.logo}>
-          <div className={styles.logo} />
+          <div className={styles.logo}>OpenStack Shared Values</div>
           <div className={styles.name}>
             <span>SourceCred</span>
             <LogoIcon />
