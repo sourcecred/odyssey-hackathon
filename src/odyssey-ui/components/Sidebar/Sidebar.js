@@ -1,5 +1,5 @@
 // @flow
-import React, {Component} from "react";
+import React, {Component, type Node as ReactNode} from "react";
 import cx from "classnames";
 import styles from "./Sidebar.scss";
 
@@ -26,7 +26,17 @@ const entities = [
   {name: "FranTake two peaces of somethingkLloyd"},
 ];
 
-export class Sidebar extends Component {
+export type SidebarProps = {|
+  +isEditModeActive: boolean,
+  +clearActiveCategory: Function,
+  +activeCategoryName: string,
+|};
+export type SidebarState = {|
+  scoreboardList: Array<Object>,
+  entitiesList: Array<Object>,
+|};
+
+export class Sidebar extends Component<SidebarProps, SidebarState> {
   state = {
     scoreboardList: [],
     entitiesList: [],
@@ -77,18 +87,23 @@ export class Sidebar extends Component {
   getScoreboard = () => {
     const {scoreboardList} = this.state;
 
-    return scoreboardList.map((currItem, index) => (
-      <div key={index} className={styles.scoreboardItem}>
-        <div className={styles.scoreboardName}>{currItem.name}</div>
-        <div className={styles.scoreboardNum}>{currItem.num}</div>
-      </div>
-    ));
+    const accessor: (Object, number) => ReactNode = (currItem, index) => {
+      const result = (
+        <div key={index} className={styles.scoreboardItem}>
+          <div className={styles.scoreboardName}>{currItem.name}</div>
+          <div className={styles.scoreboardNum}>{currItem.num}</div>
+        </div>
+      );
+      return result;
+    };
+    // what is one small hack in a sea of hacks? :)
+    return (scoreboardList: any).map(accessor);
   };
 
   getEntities = () => {
     const {entitiesList} = this.state;
 
-    return entitiesList.map((currItem, index) => (
+    return (entitiesList: any).map((currItem, index) => (
       <div key={index} className={styles.entitiesItem}>
         {currItem.name}
       </div>
