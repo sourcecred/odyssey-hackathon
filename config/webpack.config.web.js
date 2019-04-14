@@ -191,6 +191,7 @@ function makeConfig(mode /*: "production" | "development" */) /*: mixed */ {
                 {
                   loader: "css-loader",
                   options: {
+                    modules: true,
                     camelCase: true,
                     sourceMap: true,
                     localIdentName: "[local]___[hash:base64:5]",
