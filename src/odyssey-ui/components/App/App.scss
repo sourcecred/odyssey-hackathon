@@ -1,0 +1,85 @@
+.app {
+  position: relative;
+  display: flex;
+  height: 100%;
+  padding-top: 80px;
+}
+
+.priorities {
+  width: 100%;
+  max-width: 360px;
+  padding: 50px 0 50px 60px;
+}
+
+.prioritiesTitle {
+  font-size: 28px;
+  line-height: 36px;
+  color: #fff;
+  font-family: 'DINCondensed', sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  margin: 0 0 50px 0;
+}
+
+.categoryItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 16px;
+  line-height: 19px;
+  margin-top: 20px;
+  cursor: pointer;
+
+  &:hover {
+    .categoryName {
+      color: #EDAD47;
+    }
+  }
+}
+
+.categoryName {
+  color: #E9EDEC;
+  letter-spacing: -0.2px;
+}
+
+.categoryNum {
+  color: #EDAD47;
+  font-weight: 600;
+}
+
+.chartContainer {
+  width: 100%;
+  padding: 42px;
+}
+
+.exploringTitle {
+  margin: 0;
+
+  span {
+    &:first-child {
+      font-size: 14px;
+      line-height: 17px;
+      color: #8E8F91;
+      font-weight: 400;
+      margin-right: 5px;
+    }
+
+    &:last-child {
+      font-size: 26px;
+      line-height: 31px;
+      letter-spacing: -0.2px;
+      color: #E9EDEC;
+    }
+  }
+}
+
+.bgLayout {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  z-index: -1;
+
+  svg {
+    display: block;
+  }
+}
