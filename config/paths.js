@@ -13,7 +13,7 @@ module.exports = {
   dotenv: resolveApp(".env"),
   favicon: resolveApp("src/assets/logo/sourcecred_32.png"),
   appBuild: resolveApp("build"),
-  appIndexJs: resolveApp("src/homepage/index.js"),
+  appIndexJs: resolveApp("src/odyssey-ui/index.js"),
   appServerSideRenderingIndexJs: resolveApp("src/homepage/server.js"),
   appPackageJson: resolveApp("package.json"),
   appSrc: resolveApp("src"),
