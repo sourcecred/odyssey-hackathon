@@ -7,41 +7,74 @@ import styles from "./App.scss";
 import {Header} from "../Header/Header";
 import {Sidebar} from "../Sidebar/Sidebar";
 import {type ScoredEntity} from "../../../graphviz/OdysseyGraphViz";
+import {PagerankGraph} from "../../../core/pagerankGraph";
+import {type NodeAddressT, type Edge} from "../../../core/graph";
 
-import {OdysseyViz} from "../../../graphviz/OdysseyViz";
-import {OdysseyInstance} from "../../../plugins/odyssey/model";
+import {OdysseyGraphViz} from "../../../graphviz/OdysseyGraphViz";
+import {OdysseyInstance, NodePrefix} from "../../../plugins/odyssey/model";
+import {example} from "../../../plugins/odyssey/example";
+import * as NullUtil from "../../../util/null";
 
 import MainBgIcon from "./img/main-bg.svg";
+
+type AppProps = {|
+  //+instance: OdysseyInstance,
+|};
 
 type AppState = {|
   entities: $ReadOnlyArray<ScoredEntity>,
   selectedEntity: ScoredEntity | null,
   isEditModeActive: boolean,
-  instance: OdysseyInstance,
+  highlightedNode: NodeAddressT | null,
 |};
-class App extends Component<{}, AppState> {
-  state = {
-    entities: [],
-    selectedEntity: null,
-    isEditModeActive: false,
-    instance: new OdysseyInstance(),
-  };
 
-  componentDidMount() {
-    // =============> GET CATEGORIES
-    // superagent
-    //   .get('some_path')
-    //   .then(res => {
-    // this.setState({
-    //   priorities: res.data
-    // });
-    //   })
-    //   .catch(err => {
-    //     console.log(err);
-    //   });
-    //  this.setState({
-    //      priorities: priorities,
-    //    });
+class App extends Component<AppProps, AppState> {
+  _pagerankGraph: PagerankGraph;
+  _instance: OdysseyInstance;
+
+  constructor(props) {
+    super(props);
+    this._instance = example();
+    this._pagerankGraph = new PagerankGraph(
+      this._instance.graph(),
+      (_unused_edge) => ({toWeight: 1, froWeight: 0.1})
+    );
+    this.state = {
+      entities: this._computeNodes(),
+      selectedEntity: null,
+      highlightedNode: null,
+      isEditModeActive: false,
+    };
+  }
+
+  _computeNodes(): $ReadOnlyArray<ScoredEntity> {
+    const entities = Array.from(this._instance.entities()).map((x) => ({
+      score: NullUtil.get(this._pagerankGraph.node(x.address)).score,
+      ...x,
+    }));
+    let totalUserScore = 0;
+    for (const {score, type} of entities) {
+      if (type === "PERSON") {
+        totalUserScore += score;
+      }
+    }
+    return entities.map((x) => ({
+      ...x,
+      score: (x.score / totalUserScore) * 1000,
+    }));
+  }
+
+  async componentDidMount() {
+    const selectedNodes = Array.from(
+      this._instance.graph().nodes({prefix: NodePrefix.priority})
+    );
+    const seed = {type: "SELECTED_SEED", selectedNodes, alpha: 0.3};
+    await this._pagerankGraph.runPagerank(seed, {
+      maxIterations: 100,
+      convergenceThreshold: 1e-3,
+    });
+    const entities = this._computeNodes();
+    this.setState({entities});
   }
 
   handleEntitySelection = (ev, entity) => {
@@ -52,19 +85,21 @@ class App extends Component<{}, AppState> {
     });
   };
 
-  getCategoties = () => {
+  getCategoties = (filterType) => {
     const {entities} = this.state;
 
-    const entries = entities.map((entity, index) => (
-      <div
-        key={index}
-        className={styles.categoryItem}
-        onClick={(ev) => this.handleEntitySelection(ev, entity)}
-      >
-        <div className={styles.categoryName}>{entity.name}</div>
-        <div className={styles.categoryNum}>Cred {entity.score}</div>
-      </div>
-    ));
+    const entries = entities
+      .filter(({type}) => type === filterType)
+      .map((entity, index) => (
+        <div
+          key={index}
+          className={styles.categoryItem}
+          onClick={(ev) => this.handleEntitySelection(ev, entity)}
+        >
+          <div className={styles.categoryName}>{entity.name}</div>
+          <div className={styles.categoryNum}>{entity.score.toFixed(2)}¤</div>
+        </div>
+      ));
 
     return <React.Fragment>{entries}</React.Fragment>;
   };
@@ -85,6 +120,10 @@ class App extends Component<{}, AppState> {
     });
   };
 
+  updateSelectedNode(node: NodeAddressT) {
+    this.setState({highlightedNode: node});
+  }
+
   render() {
     const {selectedEntity, isEditModeActive} = this.state;
 
@@ -96,9 +135,16 @@ class App extends Component<{}, AppState> {
           changeMode={this.changeMode}
         />
 
-        <div className={styles.priorities}>
-          <h1 className={styles.prioritiesTitle}>Our projects priorities</h1>
-          <div>{this.getCategoties()}</div>
+        <div className={styles.entitiesContainer}>
+          <div className={styles.priorities}>
+            <h1 className={styles.prioritiesTitle}>Our Values</h1>
+            <div>{this.getCategoties("PRIORITY")}</div>
+          </div>
+
+          <div className={styles.priorities}>
+            <h1 className={styles.prioritiesTitle}>Our People</h1>
+            <div>{this.getCategoties("PERSON")}</div>
+          </div>
         </div>
 
         {selectedEntity != null ? (
@@ -116,11 +162,12 @@ class App extends Component<{}, AppState> {
               <span>{selectedEntity.name}</span>
             </h1>
           ) : null}
-          <OdysseyViz instance={this.state.instance} />
-        </div>
-
-        <div className={styles.bgLayout}>
-          <MainBgIcon />
+          <OdysseyGraphViz
+            nodes={this.state.entities}
+            edges={Array.from(this._instance.graph().edges())}
+            selectedNode={this.state.highlightedNode}
+            onSelect={(selectedNode) => this.updateSelectedNode(selectedNode)}
+          />
         </div>
       </div>
     );
