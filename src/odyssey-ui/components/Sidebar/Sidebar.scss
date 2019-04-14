@@ -1,0 +1,85 @@
+.sidebar {
+  position: absolute;
+  top: 80px;
+  left: 0;
+  width: 100%;
+  max-width: 380px;
+  height: 100%;
+  padding: 32px;
+  border-radius: 0 10px 10px 0;
+  background-color: #242424;
+  z-index: 20;
+}
+
+.returnBtn {
+  display: flex;
+  align-items: center;
+  color: #8E8F91;
+  font-size: 14px;
+  line-height: 17px;
+  cursor: pointer;
+
+  &:hover{
+    color: #EDAD47;
+
+    svg {
+      path {
+        stroke: #EDAD47;
+      }
+    }
+  }
+
+  svg {
+    margin-right: 8px;
+  }
+}
+
+.divider {
+  width: 100%;
+  border-bottom: 1px solid #303531;
+  margin: 16px 0 32px;
+}
+
+.title {
+  font-family: "DINCondensed";
+  font-size: 28px;
+  line-height: 34px;
+  letter-spacing: 0.04em;
+  color: #fff;
+  margin: 0 0 24px;
+}
+
+.scoreboardItem,
+.entitiesItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 16px;
+  line-height: 19px;
+  margin-top: 20px;
+  cursor: pointer;
+
+  &:hover {
+    .scoreboardName {
+      color: #EDAD47;
+    }
+  }
+}
+
+.entitiesItem {
+  color: #A5ABAD;
+
+  &:hover {
+    color: #E9EDEC;
+  }
+}
+
+.scoreboardName {
+  color: #E9EDEC;
+  letter-spacing: -0.2px;
+}
+
+.scoreboardNum {
+  color: #EDAD47;
+  font-weight: 600;
+}
