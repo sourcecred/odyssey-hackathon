@@ -5,7 +5,6 @@ import superagent from "superagent";
 import styles from "./App.scss";
 
 import {Header} from "../Header/Header";
-import {Sidebar} from "../Sidebar/Sidebar";
 import {type ScoredEntity} from "../../../graphviz/OdysseyGraphViz";
 import {PagerankGraph} from "../../../core/pagerankGraph";
 import {type NodeAddressT, type Edge} from "../../../core/graph";
@@ -65,9 +64,22 @@ class App extends Component<AppProps, AppState> {
   }
 
   async componentDidMount() {
+    await this.defaultPagerank();
+  }
+
+  async defaultPagerank() {
     const selectedNodes = Array.from(
       this._instance.graph().nodes({prefix: NodePrefix.priority})
     );
+    await this.rerunPagerankFor(selectedNodes);
+  }
+
+  async unselect() {
+    this.setState({selectedEntity: null});
+    await this.defaultPagerank();
+  }
+
+  async rerunPagerankFor(selectedNodes: NodeAddressT[]) {
     const seed = {type: "SELECTED_SEED", selectedNodes, alpha: 0.3};
     await this._pagerankGraph.runPagerank(seed, {
       maxIterations: 100,
@@ -77,12 +89,13 @@ class App extends Component<AppProps, AppState> {
     this.setState({entities});
   }
 
-  handleEntitySelection = (ev, entity) => {
+  handleEntitySelection = async (ev, entity) => {
     ev.preventDefault();
 
     this.setState({
       selectedEntity: entity,
     });
+    await this.rerunPagerankFor([entity.address]);
   };
 
   getCategoties = (filterType) => {
@@ -131,9 +144,8 @@ class App extends Component<AppProps, AppState> {
     return (
       <div className={styles.app}>
         <Header
-          isEditModeActive={isEditModeActive}
-          isCategoryActive={selectedEntity != null}
-          changeMode={this.changeMode}
+          highlightHomeButton={this.state.selectedEntity != null}
+          resetSelection={() => this.unselect()}
         />
 
         <div className={styles.entitiesContainer}>
@@ -148,20 +160,14 @@ class App extends Component<AppProps, AppState> {
           </div>
         </div>
 
-        {selectedEntity != null ? (
-          <Sidebar
-            activeCategoryName={selectedEntity.name}
-            isEditModeActive={isEditModeActive}
-            clearActiveCategory={this.clearActiveCategory}
-          />
-        ) : null}
-
         <div className={styles.chartContainer}>
           {selectedEntity != null ? (
-            <h1 className={styles.exploringTitle}>
-              <span>Exploring:</span>
-              <span>{selectedEntity.name}</span>
-            </h1>
+            <div>
+              <h1 className={styles.exploringTitle}>
+                <span>Exploring:</span>
+                <span>{selectedEntity.name}</span>
+              </h1>
+            </div>
           ) : null}
           <OdysseyGraphViz
             nodes={this.state.entities}
