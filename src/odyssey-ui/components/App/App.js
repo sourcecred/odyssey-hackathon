@@ -8,6 +8,9 @@ import {Header} from "../Header/Header";
 import {Sidebar} from "../Sidebar/Sidebar";
 import {type ScoredEntity} from "../../../graphviz/OdysseyGraphViz"
 
+import {OdysseyViz} from "../../../graphviz/OdysseyViz"
+import {OdysseyInstance} from "../../../plugins/odyssey/model"
+
 import MainBgIcon from "./img/main-bg.svg";
 
 const priorities: ScoredEntity[] = [
@@ -23,12 +26,14 @@ type AppState = {|
   entities: $ReadOnlyArray< ScoredEntity >,
   selectedEntity: ScoredEntity | null,
   isEditModeActive: boolean,
+  instance: OdysseyInstance,
 |};
 class App extends Component<{}, AppState> {
   state = {
     entities: [],
     selectedEntity: null,
     isEditModeActive: false,
+    instance: new OdysseyInstance(),
   };
 
   componentDidMount() {
@@ -121,6 +126,7 @@ class App extends Component<{}, AppState> {
               <span>{selectedEntity.name}</span>
             </h1>
           ) : null}
+          <OdysseyViz instance={this.state.instance} />
         </div>
 
         <div className={styles.bgLayout}>
