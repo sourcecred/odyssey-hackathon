@@ -6,24 +6,15 @@ import styles from "./App.scss";
 
 import {Header} from "../Header/Header";
 import {Sidebar} from "../Sidebar/Sidebar";
-import {type ScoredEntity} from "../../../graphviz/OdysseyGraphViz"
+import {type ScoredEntity} from "../../../graphviz/OdysseyGraphViz";
 
-import {OdysseyViz} from "../../../graphviz/OdysseyViz"
-import {OdysseyInstance} from "../../../plugins/odyssey/model"
+import {OdysseyViz} from "../../../graphviz/OdysseyViz";
+import {OdysseyInstance} from "../../../plugins/odyssey/model";
 
 import MainBgIcon from "./img/main-bg.svg";
 
-const priorities: ScoredEntity[] = [
-  {name: "Logistics", num: "480.1"},
-  {name: "Hachathon", num: "223.1"},
-  {name: "Development", num: "124.1"},
-  {name: "Design", num: "223.1"},
-  {name: "UX part", num: "480.1"},
-  {name: "Frontend", num: "223.1"},
-];
-
 type AppState = {|
-  entities: $ReadOnlyArray< ScoredEntity >,
+  entities: $ReadOnlyArray<ScoredEntity>,
   selectedEntity: ScoredEntity | null,
   isEditModeActive: boolean,
   instance: OdysseyInstance,
@@ -48,10 +39,9 @@ class App extends Component<{}, AppState> {
     //   .catch(err => {
     //     console.log(err);
     //   });
-
-  //  this.setState({
-//      priorities: priorities,
-//    });
+    //  this.setState({
+    //      priorities: priorities,
+    //    });
   }
 
   handleEntitySelection = (ev, entity) => {
@@ -76,7 +66,7 @@ class App extends Component<{}, AppState> {
       </div>
     ));
 
-    return <React.Fragment>{entries}</React.Fragment>
+    return <React.Fragment>{entries}</React.Fragment>;
   };
 
   changeMode = (ev, isEditModeActive) => {
@@ -91,7 +81,7 @@ class App extends Component<{}, AppState> {
     ev.preventDefault();
 
     this.setState({
-      selectedEntity: null
+      selectedEntity: null,
     });
   };
 
