@@ -6,14 +6,11 @@ import styles from "./App.scss";
 
 import {Header} from "../Header/Header";
 import {Sidebar} from "../Sidebar/Sidebar";
+import {type ScoredEntity} from "../../../graphviz/OdysseyGraphViz"
 
 import MainBgIcon from "./img/main-bg.svg";
 
-export type ScoredPriority = {|
-  +name: string,
-  +num: string,
-|};
-const priorities: ScoredPriority[] = [
+const priorities: ScoredEntity[] = [
   {name: "Logistics", num: "480.1"},
   {name: "Hachathon", num: "223.1"},
   {name: "Development", num: "124.1"},
@@ -23,16 +20,14 @@ const priorities: ScoredPriority[] = [
 ];
 
 type AppState = {|
-  priorities: ScoredPriority[],
-  isCategoryActive: boolean,
-  activeCategoryName: string,
+  entities: $ReadOnlyArray< ScoredEntity >,
+  selectedEntity: ScoredEntity | null,
   isEditModeActive: boolean,
 |};
 class App extends Component<{}, AppState> {
   state = {
-    priorities: [],
-    isCategoryActive: false,
-    activeCategoryName: "",
+    entities: [],
+    selectedEntity: null,
     isEditModeActive: false,
   };
 
@@ -49,33 +44,34 @@ class App extends Component<{}, AppState> {
     //     console.log(err);
     //   });
 
-    this.setState({
-      priorities: priorities,
-    });
+  //  this.setState({
+//      priorities: priorities,
+//    });
   }
 
-  handleCategoryClick = (ev, categoryName) => {
+  handleEntitySelection = (ev, entity) => {
     ev.preventDefault();
 
     this.setState({
-      isCategoryActive: true,
-      activeCategoryName: categoryName,
+      selectedEntity: entity,
     });
   };
 
   getCategoties = () => {
-    const {priorities} = this.state;
+    const {entities} = this.state;
 
-    return priorities.map((currEl, index) => (
+    const entries = entities.map((entity, index) => (
       <div
         key={index}
         className={styles.categoryItem}
-        onClick={(ev) => this.handleCategoryClick(ev, currEl.name)}
+        onClick={(ev) => this.handleEntitySelection(ev, entity)}
       >
-        <div className={styles.categoryName}>{currEl.name}</div>
-        <div className={styles.categoryNum}>Cred {currEl.num}</div>
+        <div className={styles.categoryName}>{entity.name}</div>
+        <div className={styles.categoryNum}>Cred {entity.score}</div>
       </div>
     ));
+
+    return <React.Fragment>{entries}</React.Fragment>
   };
 
   changeMode = (ev, isEditModeActive) => {
@@ -90,19 +86,18 @@ class App extends Component<{}, AppState> {
     ev.preventDefault();
 
     this.setState({
-      isCategoryActive: false,
-      isEditModeActive: false,
+      selectedEntity: null
     });
   };
 
   render() {
-    const {isCategoryActive, activeCategoryName, isEditModeActive} = this.state;
+    const {selectedEntity, isEditModeActive} = this.state;
 
     return (
       <div className={styles.app}>
         <Header
           isEditModeActive={isEditModeActive}
-          isCategoryActive={isCategoryActive}
+          isCategoryActive={selectedEntity != null}
           changeMode={this.changeMode}
         />
 
@@ -111,19 +106,19 @@ class App extends Component<{}, AppState> {
           <div>{this.getCategoties()}</div>
         </div>
 
-        {isCategoryActive ? (
+        {selectedEntity != null ? (
           <Sidebar
-            activeCategoryName={activeCategoryName}
+            activeCategoryName={selectedEntity.name}
             isEditModeActive={isEditModeActive}
             clearActiveCategory={this.clearActiveCategory}
           />
         ) : null}
 
         <div className={styles.chartContainer}>
-          {isCategoryActive ? (
+          {selectedEntity != null ? (
             <h1 className={styles.exploringTitle}>
               <span>Exploring:</span>
-              <span>{activeCategoryName}</span>
+              <span>{selectedEntity.name}</span>
             </h1>
           ) : null}
         </div>
