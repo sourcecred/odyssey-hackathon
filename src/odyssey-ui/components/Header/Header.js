@@ -8,7 +8,12 @@ import ConfigIcon from "./img/config.svg";
 import WatchIcon from "./img/watch.svg";
 import EditIcon from "./img/edit.svg";
 
-export class Header extends Component {
+export type Props = {|
+  +isEditModeActive: boolean,
+  +isCategoryActive: boolean,
+  +changeMode: Function,
+|};
+export class Header extends Component<Props> {
   render() {
     const {isEditModeActive, isCategoryActive, changeMode} = this.props;
 

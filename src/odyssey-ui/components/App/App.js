@@ -9,7 +9,11 @@ import {Sidebar} from "../Sidebar/Sidebar";
 
 import MainBgIcon from "./img/main-bg.svg";
 
-const priorities = [
+export type ScoredPriority = {|
+  +name: string,
+  +num: string,
+|};
+const priorities: ScoredPriority[] = [
   {name: "Logistics", num: "480.1"},
   {name: "Hachathon", num: "223.1"},
   {name: "Development", num: "124.1"},
@@ -18,7 +22,13 @@ const priorities = [
   {name: "Frontend", num: "223.1"},
 ];
 
-class App extends Component {
+type AppState = {|
+  priorities: ScoredPriority[],
+  isCategoryActive: boolean,
+  activeCategoryName: string,
+  isEditModeActive: boolean,
+|};
+class App extends Component<{}, AppState> {
   state = {
     priorities: [],
     isCategoryActive: false,
