@@ -105,3 +105,263 @@ export function example(): OdysseyInstance {
 
   return instance;
 }
+
+export function commonStackExample() {
+  const instance = new OdysseyInstance();
+
+  // teams
+  const teamOne = instance.addContribution("Team 1", "");
+  const teamTwo = instance.addContribution("Team 2", "");
+  const teamThree = instance.addContribution("Team 3", "");
+  const teamFour = instance.addContribution("Team 4", "");
+  const teamFive = instance.addContribution("Team 5", "");
+  const jedi = instance.addContribution("Jedi", "");
+
+  const sara = instance.addPerson("Sara", "");
+  instance.addEdge(teamFive, sara);
+
+  const bryan = instance.addPerson("Bryan", "");
+  instance.addEdge(teamFour, bryan);
+  const bryanContr = instance.addContribution("Coordinating with Team 5", "");
+  instance.addEdge(bryanContr, bryan);
+
+  const zargham = instance.addPerson("Zargham", "");
+  instance.addEdge(teamFive, zargham);
+
+  const kris = instance.addPerson("kris", "");
+  instance.addEdge(jedi, kris);
+
+  const josh = instance.addPerson("Josh", "");
+  instance.addEdge(jedi, josh);
+
+  const jeff = instance.addPerson("Jeff", "");
+  instance.addEdge(jedi, jeff);
+
+  const will = instance.addPerson("Will", "");
+  instance.addEdge(teamOne, will);
+
+  const zoltan = instance.addPerson("Zoltan", "");
+  instance.addEdge(teamTwo, zoltan);
+
+  const marko = instance.addPerson("Marko", "");
+  const daplion = instance.addPerson("dap-lion", "");
+
+  const sergei = instance.addPerson("Sergei", "");
+  instance.addEdge(teamTwo, sergei);
+
+  const kay = instance.addPerson("Kay", "");
+  instance.addEdge(teamTwo, kay);
+
+  const emily = instance.addPerson("Emily", "");
+  instance.addEdge(teamTwo, emily);
+
+  const mike = instance.addPerson("Mike", "");
+  instance.addEdge(teamTwo, mike);
+
+  const lb = instance.addPerson("LB", "");
+  instance.addEdge(lb, teamFive);
+  const artwork = instance.addPriority("Artwork", "");
+  instance.addEdge(teamFive, artwork);
+  instance.addEdge(artwork, lb);
+
+  const griff = instance.addPerson("Griff", "");
+  instance.addEdge(teamThree, griff);
+  instance.addEdge(teamOne, griff);
+  instance.addEdge(teamTwo, griff);
+  instance.addEdge(teamFour, griff);
+  instance.addEdge(teamFive, griff);
+
+  const daniel = instance.addPerson("Daniel", "");
+  instance.addEdge(teamFour, daniel);
+
+  const pavle = instance.addPerson("Pavle", "");
+  instance.addEdge(teamOne, pavle);
+
+  const abbey = instance.addPerson("Abbey", "");
+  instance.addEdge(teamOne, abbey);
+
+  const sponnet = instance.addPerson("Sponnet", "");
+  instance.addEdge(teamTwo, sponnet);
+
+  const ome = instance.addPerson("Ome", "");
+  instance.addEdge(teamThree, ome);
+
+  const deam = instance.addPerson("Deam", "");
+  instance.addEdge(teamThree, deam);
+
+  const thomas = instance.addPerson("Thomas", "");
+  instance.addEdge(teamFour, thomas);
+
+  const roberto = instance.addPerson("Roberto", "");
+  instance.addEdge(teamFour, roberto);
+  instance.addEdge(bryanContr, roberto);
+
+  const beth = instance.addPerson("Beth", "");
+  instance.addEdge(teamFour, beth);
+
+  const brian = instance.addPerson("Brian", "");
+  instance.addEdge(teamFive, brian);
+
+  const max = instance.addPerson("Max", "");
+  instance.addEdge(teamFive, max);
+
+  const denis = instance.addPerson("Denis", "");
+  instance.addEdge(teamFive, denis);
+
+  const irene = instance.addPerson("Irene", "");
+  instance.addEdge(teamFive, irene);
+
+  const maxS = instance.addPerson("Max s", "");
+  instance.addEdge(teamThree, maxS);
+
+  const andreas = instance.addPerson("Andreas", "");
+  instance.addEdge(teamThree, andreas);
+
+  const sebastian = instance.addPerson("Sebastian", "");
+  instance.addEdge(teamThree, sebastian);
+
+  const maxVD = instance.addPerson("Max vd", "");
+  instance.addEdge(teamFour, maxVD);
+
+  const rinke = instance.addPerson("Rinke", "");
+  instance.addEdge(teamOne, rinke);
+
+  // Priority: Networking
+  const networking = instance.addContribution("networking", "");
+  instance.addEdge(networking, griff);
+  instance.addEdge(networking, josh);
+
+  // Priority: Design
+  const design = instance.addPriority("Design", "");
+  instance.addEdge(design, josh);
+  instance.addEdge(design, marko);
+  instance.addEdge(design, sergei);
+  instance.addEdge(design, abbey);
+  instance.addEdge(design, sponnet);
+  instance.addEdge(design, beth);
+  instance.addEdge(design, max);
+  instance.addEdge(design, denis);
+  instance.addEdge(design, irene);
+
+  // Priority: Narrative
+  const narrative = instance.addPriority("Narrative", "");
+  instance.addEdge(narrative, kay);
+  instance.addEdge(narrative, pavle);
+  instance.addEdge(narrative, abbey);
+  instance.addEdge(narrative, sponnet);
+
+  // Priority: Communication
+  const communication = instance.addPriority("Communication", "");
+  instance.addEdge(communication, kris);
+
+  // Priority: Smart Contracts
+  const smartContracts = instance.addContribution("Smart Contracts", "");
+  instance.addEdge(smartContracts, mike);
+  instance.addEdge(smartContracts, sebastian);
+  instance.addEdge(smartContracts, rinke);
+
+  // medium article
+  const medArticle = instance.addContribution("Bonding Curves Article", "");
+  instance.addEdge(medArticle, zargham); // med article depended on z's research
+  instance.addEdge(communication, medArticle);
+  instance.addEdge(medArticle, josh);
+  instance.addEdge(teamOne, medArticle);
+
+  // Jeff's article
+  const jeffArticle = instance.addContribution(
+    "Commons Stack Medium Article",
+    ""
+  );
+  instance.addEdge(jeff, jeffArticle);
+  instance.addEdge(zargham, jeffArticle);
+  instance.addEdge(communication, jeffArticle);
+  instance.addEdge(teamTwo, jeffArticle);
+
+  // max launching wiki
+  const maxWiki = instance.addContribution("Github Wiki", "");
+  instance.addEdge(maxWiki, maxS);
+  instance.addEdge(communication, maxWiki);
+
+  const projectManagement = instance.addPriority("projectManagement", "");
+  instance.addEdge(projectManagement, abbey);
+  instance.addEdge(projectManagement, maxS);
+  instance.addEdge(projectManagement, sponnet);
+
+  const math = instance.addPriority("AI Expertise", "");
+  instance.addEdge(math, zargham);
+  instance.addEdge(math, sponnet);
+  instance.addEdge(math, rinke);
+  instance.addEdge(math, medArticle);
+  instance.addEdge(math, jeffArticle);
+
+  // Priority: logistics
+  const logistics = instance.addPriority("Logistics", "");
+  const boat = instance.addContribution("Boat housing", "");
+  instance.addEdge(logistics, boat);
+  instance.addEdge(boat, griff);
+  const planeTickets = instance.addContribution("Arranging plane tickets", "");
+  instance.addEdge(logistics, planeTickets);
+  instance.addEdge(planeTickets, sara);
+  instance.addEdge(brian, planeTickets);
+  instance.addEdge(denis, planeTickets);
+  instance.addEdge(max, planeTickets);
+  instance.addEdge(teamOne, boat);
+  instance.addEdge(teamTwo, boat);
+  instance.addEdge(teamThree, boat);
+  instance.addEdge(teamFour, boat);
+  instance.addEdge(teamFive, boat);
+
+  const telegramComms = instance.addContribution("Telegram Communication", "");
+  instance.addEdge(telegramComms, josh);
+
+  // Giveth meeting
+  const givethMeeting = instance.addContribution("Giveth meeting", "");
+  instance.addEdge(givethMeeting, griff);
+  instance.addEdge(givethMeeting, kris);
+  instance.addEdge(givethMeeting, jeff);
+  instance.addEdge(teamOne, givethMeeting);
+  instance.addEdge(teamTwo, givethMeeting);
+  instance.addEdge(teamThree, givethMeeting);
+  instance.addEdge(teamFour, givethMeeting);
+  instance.addEdge(teamFive, givethMeeting);
+
+  const enthusiasm = instance.addPriority("Enthusiasm", "");
+  instance.addEdge(enthusiasm, griff);
+  instance.addEdge(enthusiasm, josh);
+  instance.addEdge(enthusiasm, sergei);
+
+  const softwareDev = instance.addPriority("Software Development", "");
+  const dandelion = instance.addPerson("Dandelion", "");
+  instance.addEdge(softwareDev, dandelion);
+  instance.addEdge(softwareDev, pavle);
+  instance.addEdge(softwareDev, will);
+  instance.addEdge(softwareDev, zoltan);
+
+  const orangeVests = instance.addContribution("Coordinated Orange Vests", "");
+  instance.addEdge(orangeVests, griff);
+  instance.addEdge(orangeVests, kris);
+  instance.addEdge(teamOne, orangeVests);
+  instance.addEdge(teamTwo, orangeVests);
+  instance.addEdge(teamThree, orangeVests);
+  instance.addEdge(teamFour, orangeVests);
+  instance.addEdge(teamFive, orangeVests);
+
+  const emotionalLabor = instance.addPriority("Emotional Labor", "");
+  instance.addEdge(jeffArticle, emotionalLabor);
+  instance.addEdge(medArticle, emotionalLabor);
+
+  const interTeamCoordination = instance.addPriority(
+    "Inter-team coordination",
+    ""
+  );
+
+  instance.addEdge(interTeamCoordination, kris);
+  instance.addEdge(interTeamCoordination, deam);
+  instance.addEdge(interTeamCoordination, abbey);
+
+  const technicalLeadership = instance.addPriority("Technical Leadership", "");
+  instance.addEdge(technicalLeadership, dandelion);
+  instance.addEdge(technicalLeadership, roberto);
+  instance.addEdge(technicalLeadership, zargham);
+  return instance;
+}

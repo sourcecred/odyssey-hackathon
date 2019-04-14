@@ -12,7 +12,7 @@ import {type NodeAddressT, type Edge} from "../../../core/graph";
 
 import {OdysseyGraphViz} from "../../../graphviz/OdysseyGraphViz";
 import {OdysseyInstance, NodePrefix} from "../../../plugins/odyssey/model";
-import {example} from "../../../plugins/odyssey/example";
+import {example, commonStackExample} from "../../../plugins/odyssey/example";
 import * as NullUtil from "../../../util/null";
 
 import MainBgIcon from "./img/main-bg.svg";
@@ -34,7 +34,7 @@ class App extends Component<AppProps, AppState> {
 
   constructor(props) {
     super(props);
-    this._instance = example();
+    this._instance = commonStackExample();
     this._pagerankGraph = new PagerankGraph(
       this._instance.graph(),
       (_unused_edge) => ({toWeight: 1, froWeight: 0.1})
@@ -90,6 +90,7 @@ class App extends Component<AppProps, AppState> {
 
     const entries = entities
       .filter(({type}) => type === filterType)
+      .sort((a, b) => b.score - a.score)
       .map((entity, index) => (
         <div
           key={index}
@@ -97,7 +98,7 @@ class App extends Component<AppProps, AppState> {
           onClick={(ev) => this.handleEntitySelection(ev, entity)}
         >
           <div className={styles.categoryName}>{entity.name}</div>
-          <div className={styles.categoryNum}>{entity.score.toFixed(2)}¤</div>
+          <div className={styles.categoryNum}>{entity.score.toFixed(0)} ¤</div>
         </div>
       ));
 
