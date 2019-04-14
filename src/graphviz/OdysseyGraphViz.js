@@ -1,3 +1,4 @@
+// @flow
 import React from "react";
 
 import {type NodeAddressT, type Edge} from "../core/graph";
@@ -34,6 +35,10 @@ export type ScoredEntity = {|
   +score: number,
   +name: string,
   +description: string,
+|};
+
+export type NamedEntity = {|
+  +name: string,
 |};
 
 export type OdysseyGraphVizProps = {|
