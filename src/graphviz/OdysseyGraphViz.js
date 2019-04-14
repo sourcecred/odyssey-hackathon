@@ -45,7 +45,7 @@ export type OdysseyGraphVizProps = {|
   +nodes: $ReadOnlyArray<ScoredEntity>,
   +edges: $ReadOnlyArray<Edge>,
   +selectedNode: NodeAddressT | null,
-  +onSelect: (n: NodeAddressT) => Promise<void>,
+  +onSelect: (n: NodeAddressT) => void,
 |};
 
 // For graph visualization: inspiration and code from Ryan Morton:
@@ -68,6 +68,7 @@ export class OdysseyGraphViz extends React.Component<OdysseyGraphVizProps> {
   _selectedNodeHalo: any;
   _selectedNeighborHalo: any;
   linkForce: any;
+  _svg: any;
 
   _computeMax() {
     this._maxScore = -Infinity;
@@ -100,12 +101,12 @@ export class OdysseyGraphViz extends React.Component<OdysseyGraphVizProps> {
   }
 
   _setupScaffold() {
-    const svg = d3
+    this._svg = d3
       .select(this._rootNode)
       .append("svg")
       .style("flex-grow", 1);
-    const rect = svg.node().getBoundingClientRect();
-    this._chart = svg
+    const rect = this._svg.node().getBoundingClientRect();
+    this._chart = this._svg
       .append("g")
       .attr("transform", `translate(${rect.width / 2}, ${rect.height / 2})`);
     this._tooltip = d3
@@ -207,8 +208,8 @@ export class OdysseyGraphViz extends React.Component<OdysseyGraphVizProps> {
       )
       .force("x", d3.forceX())
       .force("y", d3.forceY())
-      .alphaTarget(0.01)
-      .alphaMin(0.001)
+      .alphaTarget(0.02)
+      .alphaMin(0.01)
       .on("tick", this._ticked);
   }
 
@@ -295,7 +296,16 @@ export class OdysseyGraphViz extends React.Component<OdysseyGraphVizProps> {
       .attr("r", (d) => this._radius(d) + 3);
   }
 
+  _fixSize() {
+    const rect = this._svg.node().getBoundingClientRect();
+    this._chart.attr(
+      "transform",
+      `translate(${rect.width / 2}, ${rect.height / 2})`
+    );
+  }
+
   _updateD3() {
+    this._fixSize();
     this._computeMax();
     const links = this.props.edges.map((e) => ({
       source: e.src,
@@ -368,7 +378,7 @@ export class OdysseyGraphViz extends React.Component<OdysseyGraphVizProps> {
       .ease(d3.easeQuad)
       .duration(1000)
       .text((d) => {
-        return Math.floor(d.score * 1000);
+        return Math.floor(d.score);
       })
       .attr("fill", this._color.bind(this))
       .attr("font-size", 14);
@@ -419,6 +429,7 @@ export class OdysseyGraphViz extends React.Component<OdysseyGraphVizProps> {
   componentDidMount() {
     this._setupScaffold();
     this._updateD3();
+    setTimeout(() => this._fixSize(), 1);
   }
 
   componentDidUpdate() {

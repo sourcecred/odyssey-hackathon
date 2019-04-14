@@ -17,7 +17,7 @@ import {
 import {example} from "../plugins/odyssey/example";
 import {PagerankGraph} from "../core/pagerankGraph";
 import * as NullUtil from "../util/null";
-import {OdysseyViz} from "./OdysseyViz";
+//import {OdysseyViz} from "./OdysseyViz";
 
 export class AppPage extends React.Component<{|
   +assets: Assets,
@@ -30,6 +30,7 @@ export class AppPage extends React.Component<{|
   );
 
   render() {
-    return <OdysseyViz instance={example()} />;
+    return <div>"Deprecated"</div>;
+    //return <OdysseyViz instance={example()} />;
   }
 }

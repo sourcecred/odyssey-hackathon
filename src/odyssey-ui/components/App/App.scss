@@ -7,8 +7,9 @@
 
 .priorities {
   width: 100%;
-  max-width: 360px;
-  padding: 50px 0 50px 60px;
+  max-width: 560px;
+  min-width: 300px;
+  padding: 20px 20px 50px 20px;
 }
 
 .prioritiesTitle {
@@ -18,7 +19,7 @@
   font-family: 'DINCondensed', sans-serif;
   font-weight: 700;
   letter-spacing: 0.04em;
-  margin: 0 0 50px 0;
+  margin: 0 0 30px 0;
 }
 
 .categoryItem {
@@ -47,9 +48,16 @@
   font-weight: 600;
 }
 
+.entitiesContainer {
+  display: flex;
+  flex-direction: column;
+  background-color: #242424;
+}
+
 .chartContainer {
   width: 100%;
   padding: 42px;
+  display: flex;
 }
 
 .exploringTitle {

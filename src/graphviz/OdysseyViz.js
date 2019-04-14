@@ -29,6 +29,7 @@ export type OdysseyVizState = {|
   +selectedNode: NodeAddressT | null,
 |};
 
+/*
 export class OdysseyViz extends React.Component<
   OdysseyVizProps,
   OdysseyVizState
@@ -97,3 +98,4 @@ export class OdysseyViz extends React.Component<
     );
   }
 }
+*/
