@@ -10,5 +10,6 @@ flow-typed
 [options]
 suppress_comment=\\(.\\|\n\\)*\\$ExpectFlowError
 include_warnings=true
+module.name_mapper='.*\(.s?css\)' -> 'empty/object'
 
 [strict]
