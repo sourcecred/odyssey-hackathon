@@ -15,6 +15,7 @@ cred to every contribution, value, and person.
 [Odyssey Hackathon]: https://odyssey.org/odyssey-hackathon/
 
 For a demo, see: [sourcecred.io/odyssey-hackathon].
+
 [sourcecred.io/odyssey-hackathon]: https://sourcecred.io/odyssey-hackathon/
 
 To update the demo, run `./scripts/rebuild_example.sh` and commit the resultant
