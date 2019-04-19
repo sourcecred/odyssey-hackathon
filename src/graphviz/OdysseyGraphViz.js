@@ -115,9 +115,13 @@ export class OdysseyGraphViz extends React.Component<OdysseyGraphVizProps> {
       .attr("class", "toolTip")
       .style("display", "none")
       .style("position", "absolute")
+      .style("color", "white")
       .style("min-width", "50px")
+      .style("padding", "5px")
+      .style("border", "1px solid")
+      .style("border-radius", "2px")
       .style("height", "auto")
-      .style("background", "none repeat scroll 0 0 #ffffff");
+      .style("background-color", "#313131");
 
     this._edgesG = this._chart.append("g");
     this._selectedNodeHalo = this._chart.append("g");
@@ -134,6 +138,7 @@ export class OdysseyGraphViz extends React.Component<OdysseyGraphVizProps> {
         .style("left", d3.event.pageX + 40 + "px")
         .style("top", d3.event.pageY + "px")
         .style("display", "inline-block")
+        .style("border-color", that._color(data))
         .html(() => {
           return `${data.name}: ${data.description}`;
         });
